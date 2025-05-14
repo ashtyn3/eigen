@@ -18,4 +18,4 @@ class Edge:
 
     def forward(self, res: object, s: Scheduler):
         assert isinstance(s, Scheduler)
-        self.t.put(res, s)
+        self.t.put(res)

@@ -20,12 +20,19 @@ class Node:
     outputs: list["Edge"]
     gpu: bool
     lock: threading.Lock
+    named: dict[int, str]
+    scheduler: Scheduler
 
-    def __init__(self, name: str, kernel: GenericKernel):
+    def __init__(self, name: str, kernel: GenericKernel, sched: Scheduler):
         self.name = name
         self.kernel = kernel
         self.gpu = False
+        self.named = {}
+        self.scheduler = sched
         kernel_data = inspect.signature(kernel)
+        for [i, v] in enumerate(kernel_data.parameters.values()):
+            self.named[v] = i
+
         self.inputs: list[object] = [None] * len(kernel_data.parameters)
 
         self.outputs = []
@@ -42,12 +49,15 @@ class Node:
         for [i, _] in enumerate(self.inputs):
             self.inputs[i] = None
 
-    def put(self, v: object, s: Scheduler):
+    def put(self, v: object, k: str | None = None):
         with self.lock:
-            self.inputs[self.inputs.index(None)] = v
+            if k is not None:
+                self.inputs[self.named[k]] = v
+            else:
+                self.inputs[self.inputs.index(None)] = v
             # self.inputs.append(v)
             if self.ready():
-                s.work.put(self)
+                self.scheduler.work.put(self)
 
     def immediate(self, s: Scheduler):
         with self.lock:
