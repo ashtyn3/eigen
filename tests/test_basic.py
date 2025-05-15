@@ -11,8 +11,6 @@ def test_basic():
 
     g = Graph()
 
-    b = g.add_node("bob", add)
-
     x, y = (
         g.constant(9),
         g.constant(Tensor((3, 2), dtype=eigen.dtypes.dtypes.float32)),

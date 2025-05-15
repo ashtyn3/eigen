@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+import os
 
 from eigen.edge import Edge
 from eigen.node import GenericKernel, Node
@@ -21,6 +22,8 @@ class Graph:
 
     def add_node(self, n: str, src: GenericKernel) -> Node:
         self.ontology[n] = Node(n, src, self.scheduler)
+        if int(os.getenv("METAL", "0")):
+            self.ontology[n].GPU()
         return self.ontology[n]
 
     def connect(self, f: str, t: str):
