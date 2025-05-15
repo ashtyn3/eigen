@@ -7,6 +7,7 @@ from eigen.edge import Edge
 from eigen.node import GenericKernel, Node
 from eigen.scheduler import Scheduler
 from eigen.tensor import Tensor
+from eigen.ops import OpsTrait
 
 if TYPE_CHECKING:
     from eigen.node import Node
@@ -16,9 +17,16 @@ class Graph:
     ontology: dict[str, Node] = {}
     op_counter: dict[str, int] = {}
     scheduler: Scheduler
+    runtime: OpsTrait
 
     def __init__(self):
         self.scheduler = Scheduler()
+        if int(os.getenv("METAL", "0")):
+            raise NotImplementedError
+        else:
+            from eigen.cpu_runtime import CPU_Ops
+
+            self.runtime = CPU_Ops
 
     def add_node(self, n: str, src: GenericKernel) -> Node:
         self.ontology[n] = Node(n, src, self.scheduler)
