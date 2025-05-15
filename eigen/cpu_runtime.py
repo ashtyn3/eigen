@@ -71,25 +71,57 @@ class CPU_Ops(ops.OpsTrait):
         )
 
     def sum_op(self, axis: ops.other_consts = 0):
-        rows, cols = self.host.shape
-        if axis == 0:
-            # Sum down columns → result has `cols` elements
-            result = [0] * cols
-            for r in range(rows):
-                for c in range(cols):
-                    result[c] += self.host._buffer[(r * cols) + c]
-            return Tensor((1, len(result)), result)
+        from functools import reduce
 
-        elif axis == 1:
-            # Sum across rows → result has `rows` elements
-            result = [0] * rows
-            for r in range(rows):
-                for c in range(cols):
-                    result[r] += self.host._buffer[(r * cols) + c]
-            return Tensor((1, len(result)), result)
+        import operator
 
-        else:
-            raise ValueError("Invalid axis for 2D tensor")
+        # Compute strides for row-major layout
+        strides = []
+        acc = 1
+        for dim in reversed(self.host.shape):
+            strides.insert(0, acc)
+            acc *= dim
+
+        # Compute outer, axis, and inner sizes
+        outer = reduce(operator.mul, self.host.shape[:axis], 1)
+        axis_dim = self.host.shape[axis]
+        inner = reduce(operator.mul, self.host.shape[axis + 1 :], 1)
+
+        result = []
+        for o in range(outer):
+            for i in range(inner):
+                base = o * axis_dim * inner + i
+                acc = 0
+                for j in range(axis_dim):
+                    idx = base + j * inner
+                    acc += self.host._buffer[idx]
+                result.append(acc)
+
+        # Return summed buffer and new shape
+        new_shape = self.host.shape[:axis] + self.host.shape[axis + 1 :]
+        if len(new_shape) == 1:
+            new_shape = (1, new_shape[0])
+        return Tensor(new_shape, result)
+
+    # rows, cols = self.host.shape
+    # if axis == 0:
+    #     # Sum down columns → result has `cols` elements
+    #     result = [0] * cols
+    #     for r in range(rows):
+    #         for c in range(cols):
+    #             result[c] += self.host._buffer[(r * cols) + c]
+    #     return Tensor((1, len(result)), result)
+    #
+    # elif axis == 1:
+    #     # Sum across rows → result has `rows` elements
+    #     result = [0] * rows
+    #     for r in range(rows):
+    #         for c in range(cols):
+    #             result[r] += self.host._buffer[(r * cols) + c]
+    #     return Tensor((1, len(result)), result)
+    #
+    # else:
+    #     raise ValueError("Invalid axis for 2D tensor")
 
     def op(self, op: ops.Ops, other: ops.other_consts | None = None):
         self.dtype = self.host.dtype
