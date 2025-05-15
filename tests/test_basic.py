@@ -1,48 +1,38 @@
 import eigen
 from eigen import Graph
 from eigen import Scheduler
+from eigen import Tensor
 # from eigen import Runtime
 
 
 def test_basic():
-    def add(a: int, b: int):
-        return a + b
-
-    def n1():
-        return 2
-
-    def n2():
-        return 2
+    def add(a: Tensor, b: Tensor):
+        return a
 
     g = Graph()
 
     b = g.add_node("bob", add)
 
-    x = g.add_node("a", n1)
-    y = g.add_node("b", n2)
+    x, y = g.constant(9), g.constant(9)
 
     t = g.add_node("steve", add)
 
-    g.connect("a", "bob")
-    g.connect("b", "bob")
-
-    g.connect("bob", "steve")
-    g.connect("bob", "steve")
-
-    x.immediate(g.scheduler)
-    y.immediate(g.scheduler)
+    g.connect(x.name, t.name)
+    g.connect(y.name, t.name)
+    #
+    # g.connect("bob", "steve")
+    # g.connect("bob", "steve")
 
     g.scheduler.work.join()
     g.scheduler.shutdown()
+    #
+    print(t.outputs[0])
+    # assert t.outputs[0] == 8
 
-    # _ = Runtime()
-    assert t.outputs[0] == 8
 
-
+test_basic()
 h = eigen.Tensor((2, 3), [0, 1, 2, 3, 4, 5])
 # b = eigen.Tensor((3, 1), [0, 1, 2])
 
-n = eigen.cpu_runtime.CPU_Ops(h).sum(0)
-n2 = eigen.cpu_runtime.CPU_Ops(h).sum(1)
+n = eigen.cpu_runtime.CPU_Ops(h).add(h)
 print(n)
-print(n2)

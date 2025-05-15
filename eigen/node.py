@@ -59,10 +59,11 @@ class Node:
             if self.ready():
                 self.scheduler.work.put(self)
 
-    def immediate(self, s: Scheduler):
+    def immediate(self, s: Scheduler) -> Node:
         with self.lock:
             if self.ready():
                 s.work.put(self)
+        return self
 
     def fire(self):
         if not self.ready():
