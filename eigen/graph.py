@@ -39,6 +39,8 @@ class Graph:
 
         if isinstance(v, list):
             v = Tensor((1, 1), v)
+        elif isinstance(v, Tensor):
+            v = v
         else:
             v = Tensor((1, 1), [v])
 

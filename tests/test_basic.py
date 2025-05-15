@@ -7,13 +7,16 @@ from eigen import Tensor
 
 def test_basic():
     def add(a: Tensor, b: Tensor):
-        return a
+        return b
 
     g = Graph()
 
     b = g.add_node("bob", add)
 
-    x, y = g.constant(9), g.constant(9)
+    x, y = (
+        g.constant(9),
+        g.constant(Tensor((3, 2), dtype=eigen.dtypes.dtypes.float32)),
+    )
 
     t = g.add_node("steve", add)
 

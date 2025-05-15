@@ -62,7 +62,7 @@ class Tensor:
             # s += "  [ "
             for c in range(cols):
                 idx = r * cols + c
-                s += f"{self._buffer[idx]:g} "
+                s += f"{self._buffer[idx]} "
             s += "\n"
         s += "]"
         return f"<dtype={self.dtype.name} shape={self.shape} nbytes={self.nbytes}>\n{s}"
