@@ -5,6 +5,7 @@ from eigen.dtypes import Consts, Eigen_Dtype, py
 from eigen.node import Node
 from eigen.device import Device
 import numpy as np
+import math
 
 
 class Tensor:
@@ -19,7 +20,7 @@ class Tensor:
 
     @property
     def flat_len(self):
-        return self.shape[0] * self.shape[1]
+        return math.prod(self.shape)
 
     def __init__(
         self,
