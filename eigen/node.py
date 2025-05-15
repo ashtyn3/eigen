@@ -2,18 +2,19 @@ from __future__ import annotations
 import inspect
 import os
 import threading
-from typing import Callable, Self
+from typing import Callable, Self, Union
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from eigen.tensor import Tensor
+
+    Consts = Union[Tensor, int, float]
 
 
 GenericKernel = Callable[..., object]
 
 
 class Node:
-    # name: str
     kernel: GenericKernel
     inputs: list[object]
     gpu: bool
@@ -29,13 +30,21 @@ class Node:
         for [i, v] in enumerate(kernel_data.parameters.values()):
             self.named[v] = i
 
-        self.inputs: list[Tensor] = inputs
+        self.inputs: list[Consts] = inputs
 
         self.outputs = []
         self.lock = threading.Lock()
 
     def forward(self):
-        in_data = [t.realize() for t in self.inputs]
+        from eigen.tensor import Tensor
+
+        # in_data = [t.realize() for t in self.inputs]
+        in_data = []
+        for t in self.inputs:
+            if isinstance(t, Tensor):
+                in_data.append(t.realize())
+                continue
+            in_data.append(t)
         return self.kernel(*in_data)
 
     def GPU(self) -> Self:

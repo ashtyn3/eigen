@@ -85,7 +85,7 @@ class Tensor:
         if self.realized is False:
             self.data = self.node.forward()
             self.realized = True
-        return np.array(self.data._buffer).reshape(self.shape)
+        return np.array(self.data._buffer).reshape(self.data.shape)
 
     def __add__(self, x):
         def add_kernel(a_data, b_data):
