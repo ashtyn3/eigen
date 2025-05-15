@@ -6,37 +6,37 @@ from typing import Callable, Self
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from eigen.scheduler import Scheduler
-    from eigen.edge import Edge
+    from eigen.tensor import Tensor
 
 
 GenericKernel = Callable[..., object]
 
 
 class Node:
-    name: str
+    # name: str
     kernel: GenericKernel
     inputs: list[object]
-    outputs: list["Edge"]
     gpu: bool
     lock: threading.Lock
     named: dict[int, str]
-    scheduler: Scheduler
 
-    def __init__(self, name: str, kernel: GenericKernel, sched: Scheduler):
-        self.name = name
+    def __init__(self, kernel: GenericKernel, inputs=[]):
+        # self.name = name
         self.kernel = kernel
         self.gpu = False
         self.named = {}
-        self.scheduler = sched
         kernel_data = inspect.signature(kernel)
         for [i, v] in enumerate(kernel_data.parameters.values()):
             self.named[v] = i
 
-        self.inputs: list[object] = [None] * len(kernel_data.parameters)
+        self.inputs: list[Tensor] = inputs
 
         self.outputs = []
         self.lock = threading.Lock()
+
+    def forward(self):
+        in_data = [t.realize() for t in self.inputs]
+        return self.kernel(*in_data)
 
     def GPU(self) -> Self:
         self.gpu = True
@@ -48,33 +48,3 @@ class Node:
     def reset(self):
         for [i, _] in enumerate(self.inputs):
             self.inputs[i] = None
-
-    def put(self, v: object, k: str | None = None):
-        with self.lock:
-            if k is not None:
-                self.inputs[self.named[k]] = v
-            else:
-                self.inputs[self.inputs.index(None)] = v
-            # self.inputs.append(v)
-            if self.ready():
-                self.scheduler.work.put(self)
-
-    def immediate(self, s: Scheduler) -> Node:
-        with self.lock:
-            if self.ready():
-                s.work.put(self)
-        return self
-
-    def fire(self):
-        if not self.ready():
-            if int(os.getenv("V", "0")):
-                print(f"info: skipping name={self.name}")
-            return
-        if int(os.getenv("V", "0")):
-            print(f"info: running name={self.name}")
-
-        with self.lock:
-            out = self.kernel(*self.inputs)
-            self.reset()
-
-        return out

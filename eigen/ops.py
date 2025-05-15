@@ -2,9 +2,8 @@ from eigen.dtypes import FastEnum, Eigen_Dtype
 from enum import auto
 from typing import Union
 
-from eigen.tensor import Tensor
 
-other_consts = Union[int, float, Tensor]
+other_consts = Union[int, float]
 
 
 class Ops(FastEnum):
@@ -80,7 +79,7 @@ class Ops(FastEnum):
 class OpsTrait:
     dtype: Eigen_Dtype
 
-    def __init__(self, host: Tensor):
+    def __init__(self, host):
         self.host = host
         self.dtype = host.dtype
 
@@ -180,10 +179,10 @@ class OpsTrait:
     def squeeze(self, axis):
         return self.op(Ops.SQUEEZE, axis)
 
-    def concatenate(self, other: Tensor, axis):
+    def concatenate(self, other, axis):
         return self.op(Ops.CONCATENATE, (other, axis))
 
-    def stack(self, other: Tensor, axis):
+    def stack(self, other, axis):
         return self.op(Ops.STACK, (other, axis))
 
     def split(self, num_or_size_splits, axis):

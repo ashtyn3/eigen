@@ -77,7 +77,7 @@ class Metal_Dim:
         )
 
 
-class Runtime:
+class Metal_Runtime:
     def __init__(self):
         self.device = Metal.MTLCreateSystemDefaultDevice()
         self.command_queue = self.device.newCommandQueue()
@@ -125,7 +125,7 @@ class Kernel:
         self.encoder.endEncoding()
 
 
-class Metal_Ops(ops.OpsTrait):
+class Runtime(ops.OpsTrait):
     dtype: Eigen_Dtype
 
     def add_op(self, other):

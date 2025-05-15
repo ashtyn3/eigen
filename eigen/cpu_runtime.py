@@ -1,10 +1,13 @@
-from eigen.tensor import Tensor
 import eigen.ops as ops
 from eigen.dtypes import Eigen_Dtype
 from typing import Union
 
+from typing import TYPE_CHECKING
 
-class CPU_Ops(ops.OpsTrait):
+from eigen.tensor import Tensor
+
+
+class Runtime(ops.OpsTrait):
     dtype: Eigen_Dtype
 
     def add_op(self, other: Tensor):
@@ -102,26 +105,6 @@ class CPU_Ops(ops.OpsTrait):
         if len(new_shape) == 1:
             new_shape = (1, new_shape[0])
         return Tensor(new_shape, result)
-
-    # rows, cols = self.host.shape
-    # if axis == 0:
-    #     # Sum down columns → result has `cols` elements
-    #     result = [0] * cols
-    #     for r in range(rows):
-    #         for c in range(cols):
-    #             result[c] += self.host._buffer[(r * cols) + c]
-    #     return Tensor((1, len(result)), result)
-    #
-    # elif axis == 1:
-    #     # Sum across rows → result has `rows` elements
-    #     result = [0] * rows
-    #     for r in range(rows):
-    #         for c in range(cols):
-    #             result[r] += self.host._buffer[(r * cols) + c]
-    #     return Tensor((1, len(result)), result)
-    #
-    # else:
-    #     raise ValueError("Invalid axis for 2D tensor")
 
     def op(self, op: ops.Ops, other: ops.other_consts | None = None):
         self.dtype = self.host.dtype
