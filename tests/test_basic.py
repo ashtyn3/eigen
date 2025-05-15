@@ -1,3 +1,4 @@
+import eigen
 from eigen import Graph
 from eigen import Scheduler
 # from eigen import Runtime
@@ -36,3 +37,12 @@ def test_basic():
 
     # _ = Runtime()
     assert t.outputs[0] == 8
+
+
+h = eigen.Tensor((2, 3), [0, 1, 2, 3, 4, 5])
+# b = eigen.Tensor((3, 1), [0, 1, 2])
+
+n = eigen.cpu_runtime.CPU_Ops(h).sum(0)
+n2 = eigen.cpu_runtime.CPU_Ops(h).sum(1)
+print(n)
+print(n2)

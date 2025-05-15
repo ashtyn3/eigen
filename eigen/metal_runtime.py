@@ -1,6 +1,8 @@
 from __future__ import annotations
 import Metal
 import ctypes
+import ops
+from dtypes import Eigen_Dtype
 
 kernel_source = """
 #include <metal_stdlib>
@@ -14,16 +16,22 @@ kernel void log_kernel(device int *in  [[ buffer(0) ]],
 }
 """
 
-kernel_source_f = """
-#include <metal_stdlib>
-using namespace metal;
 
-kernel void log_kernel(device float *in  [[ buffer(0) ]],
-                       device float *out [[ buffer(1) ]],
-                       uint id [[ thread_position_in_grid ]]) {
-    out[id] = in[2 * id] + in[2 * id + 1];
-}
-"""
+def vector_add_src(t_name: str):
+    source = f"""
+    #include <metal_stdlib>
+    using namespace metal;
+
+    kernel void vector_add(
+        device const {t_name}* inA [[ buffer(0) ]],
+        device const {t_name}* inB [[ buffer(1) ]],
+        device {t_name}* result [[ buffer(2) ]],
+        uint id [[ thread_position_in_grid ]]
+    ) {{
+        result[id] = inA[id] + inB[id];
+    }}
+    """
+    return (source, 3)
 
 
 class Metal_Buffer:
@@ -82,7 +90,6 @@ class Runtime:
 
 class Kernel:
     inputs: list[Metal_Buffer]
-    output: list[Metal_Buffer]
     name: str
 
     def __init__(self, r, name: str):
@@ -118,29 +125,40 @@ class Kernel:
         self.encoder.endEncoding()
 
 
-r = Runtime()
-k = Kernel(r, "log_kernel")
-vals = [
-    1.5,
-    2.5,
-    1.5,
-    2.5,
-    1.5,
-    2.5,
-    1.5,
-    2.5,
-    2.5,
-    2.5,
-]
+class Metal_Ops(ops.OpsTrait):
+    dtype: Eigen_Dtype
 
-input_buf = Metal_Buffer(r.device, ctypes.c_float, len(vals)).from_arr(vals)
+    def add_op(self, other):
+        src, buffers = vector_add_src(self.dtype.name)
 
-output_buf = Metal_Buffer(r.device, ctypes.c_float, 5)
+    def op(self, dtype: Eigen_Dtype, op: ops.Ops, other):
+        self.dtype = dtype
+        return {ops.Ops.ADD: self.add_op}[op](other)
 
-k.load_source(kernel_source_f).set_buffers([input_buf, output_buf]).dims(
-    Metal_Dim(5, 3)
-)
-k.end()
 
-r.commit()
-print(output_buf.backward())
+# r = Runtime()
+# k = Kernel(r, "log_kernel")
+# vals = [
+#     1.5,
+#     2.5,
+#     1.5,
+#     2.5,
+#     1.5,
+#     2.5,
+#     1.5,
+#     2.5,
+#     2.5,
+#     2.5,
+# ]
+#
+# input_buf = Metal_Buffer(r.device, ctypes.c_float, len(vals)).from_arr(vals)
+#
+# output_buf = Metal_Buffer(r.device, ctypes.c_float, 5)
+#
+# k.load_source(kernel_source_f).set_buffers([input_buf, output_buf]).dims(
+#     Metal_Dim(5, 3)
+# )
+# k.end()
+#
+# r.commit()
+# print(output_buf.backward())
