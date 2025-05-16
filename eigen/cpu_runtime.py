@@ -12,7 +12,7 @@ from eigen.lazy import LazyOp
 class Runtime(ops.OpsTrait):
     dtype: Eigen_Dtype
 
-    def add_op(host: Tensor, other: Tensor):
+    def add_op(self, host: Tensor, other: Tensor):
         if host.shape != other.shape:
             raise ValueError("Add op needs matching shapes")
 
@@ -114,7 +114,7 @@ class Runtime(ops.OpsTrait):
         host: ops.other_consts,
         other: ops.other_consts | None = None,
     ):
-        self.dtype = self.host.dtype
+        self.dtype = host.dtype
         fn = {
             ops.Ops.ADD: self.add_op,
             ops.Ops.SUB: self.sub_op,
@@ -125,6 +125,7 @@ class Runtime(ops.OpsTrait):
             ops.Ops.ABS: self.abs_op,
             # reductions
             ops.Ops.SUM: self.sum_op,
+            # other
             ops.Ops.CONST: self.const,
         }[op]
 

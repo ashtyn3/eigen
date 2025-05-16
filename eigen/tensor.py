@@ -85,7 +85,7 @@ class Tensor:
 
     def realize(self):
         self.realized = True
-        self.data = self.node.forward()
+        self.data = self._node.forward()
         return self.data
 
     def numpy(self):

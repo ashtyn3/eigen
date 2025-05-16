@@ -54,7 +54,7 @@ class LazyOp(metaclass=LazyOpMeta):
             + b"".join([s.key for s in self.arg])
         ).digest()
 
-    def toposort(self, visited=set(), out=[]):
+    def toposort(self, visited=set(), out=[]) -> list[LazyOp]:
         if self in visited:
             return out
 
@@ -62,6 +62,8 @@ class LazyOp(metaclass=LazyOpMeta):
             if isinstance(inp, LazyOp):
                 inp.toposort(visited, out)
 
+        if self.op == eigen.ops.Ops.CONST:
+            return out
         out.append(self)
         return out
 

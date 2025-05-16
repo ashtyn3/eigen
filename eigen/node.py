@@ -50,6 +50,21 @@ class Node:
         # no need to include tensor
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
+    def forward(self):
+        exec_items = self._walk().toposort()
+        results = []
+        # print(exec_items)
+        for items in exec_items:
+            inputs = []
+            for s in items.srcs:
+                if s.op == Ops.CONST:
+                    key = s.srcs[0]
+                    inputs.append(tensor_map.get(key))
+                else:
+                    inputs.append(tensor_map.get(s).realize())
+            results.append(self.kernel(*inputs))
+        return results[-1]
+
     def GPU(self) -> Self:
         self.gpu = True
         return self
