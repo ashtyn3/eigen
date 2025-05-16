@@ -54,6 +54,17 @@ class LazyOp(metaclass=LazyOpMeta):
             + b"".join([s.key for s in self.arg])
         ).digest()
 
+    def toposort(self, visited=set(), out=[]):
+        if self in visited:
+            return out
+
+        for inp in self.srcs:
+            if isinstance(inp, LazyOp):
+                inp.toposort(visited, out)
+
+        out.append(self)
+        return out
+
     def _str_recursive(self, indent):
         pad = "  " * indent
         if not self.srcs:

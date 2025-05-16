@@ -25,7 +25,7 @@ class Node:
         self.inputs: list[Consts] = inputs
         self.op = op
 
-    def _walk(self):
+    def _walk(self) -> LazyOp:
         from eigen.tensor import Tensor
 
         input_ops = []
