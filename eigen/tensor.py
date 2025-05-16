@@ -65,17 +65,17 @@ class Tensor:
         return ctypes.sizeof(self.to_ctype()) * self.flat_len
 
     def __str__(self):
-        rows, cols = self.shape
-        s = "[\n"
-        for r in range(rows):
-            # s += "  [ "
-            for c in range(cols):
-                idx = r * cols + c
-                s += f"{self._buffer[idx]} "
-            s += "\n"
-        s += "]"
-        content = s if self.realized else "unrealized"
-        return f"<dtype={self.dtype.name} shape={self.shape} nbytes={self.nbytes}>\n{content}"
+        # rows, cols = self.shape
+        # s = "[\n"
+        # for r in range(rows):
+        #     # s += "  [ "
+        #     for c in range(cols):
+        #         idx = r * cols + c
+        #         s += f"{self._buffer[idx]} "
+        #     s += "\n"
+        # s += "]"
+        # content = s if self.realized else "unrealized"
+        return f"<dtype={self.dtype.name} shape={self.shape} nbytes={self.nbytes}>\n"
 
     def realize(self):
         self.realized = True
