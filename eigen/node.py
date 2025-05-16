@@ -1,9 +1,10 @@
 from __future__ import annotations
-import inspect
-import os
-import threading
-from typing import Callable, Self, Union
-from typing import TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Callable, Self, Union
+import hashlib
+
+from eigen.lazy import LazyOp, tensor_map
+from eigen.ops import Ops
 
 if TYPE_CHECKING:
     from eigen.tensor import Tensor
@@ -16,44 +17,39 @@ GenericKernel = Callable[..., object]
 
 class Node:
     kernel: GenericKernel
-    inputs: list[object]
     gpu: bool
-    lock: threading.Lock
-    named: dict[int, str]
 
-    def __init__(self, kernel: GenericKernel, inputs=[]):
-        # self.name = name
+    def __init__(self, kernel: GenericKernel, op, inputs=[]):
         self.kernel = kernel
         self.gpu = False
-        self.named = {}
-        kernel_data = inspect.signature(kernel)
-        for [i, v] in enumerate(kernel_data.parameters.values()):
-            self.named[v] = i
-
         self.inputs: list[Consts] = inputs
+        self.op = op
 
-        self.outputs = []
-        self.lock = threading.Lock()
-
-    def forward(self):
+    def _walk(self):
         from eigen.tensor import Tensor
 
-        # in_data = [t.realize() for t in self.inputs]
-        in_data = []
-        for t in self.inputs:
-            if isinstance(t, Tensor):
-                in_data.append(t.realize())
-                continue
-            in_data.append(t)
-        return self.kernel(*in_data)
+        input_ops = []
+        for inp in self.inputs:
+            if isinstance(inp, Tensor):
+                op = inp.node._walk()
+                input_ops.append(op)
+            else:
+                input_ops.append(inp)
+
+        op = LazyOp(self.op, input_ops)
+
+        return op
+
+    @classmethod
+    def make_const(cls, tensor, key):
+        tensor_map.set(key, tensor)
+
+        def kernel():
+            return LazyOp(Ops.CONST, srcs=(key,))
+
+        # no need to include tensor
+        return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
     def GPU(self) -> Self:
         self.gpu = True
         return self
-
-    def ready(self) -> bool:
-        return all(x is not None for x in self.inputs)
-
-    def reset(self):
-        for [i, _] in enumerate(self.inputs):
-            self.inputs[i] = None

@@ -1,3 +1,4 @@
+import os
 import eigen.ops as ops
 from eigen.dtypes import Eigen_Dtype
 from typing import Union
@@ -5,18 +6,19 @@ from typing import Union
 from typing import TYPE_CHECKING
 
 from eigen.tensor import Tensor
+from eigen.lazy import LazyOp
 
 
 class Runtime(ops.OpsTrait):
     dtype: Eigen_Dtype
 
-    def add_op(self, other: Tensor):
-        if self.host.shape != other.shape:
+    def add_op(host: Tensor, other: Tensor):
+        if host.shape != other.shape:
             raise ValueError("Add op needs matching shapes")
 
         return Tensor(
-            self.host.shape,
-            [x + y for x, y in zip(other._buffer, self.host._buffer)],
+            host.shape,
+            [x + y for x, y in zip(other._buffer, host._buffer)],
         )
 
     def sub_op(self, other: Tensor):
@@ -106,7 +108,12 @@ class Runtime(ops.OpsTrait):
             new_shape = (1, new_shape[0])
         return Tensor(new_shape, result)
 
-    def op(self, op: ops.Ops, other: ops.other_consts | None = None):
+    def op(
+        self,
+        op: ops.Ops,
+        host: ops.other_consts,
+        other: ops.other_consts | None = None,
+    ):
         self.dtype = self.host.dtype
         fn = {
             ops.Ops.ADD: self.add_op,
@@ -118,8 +125,9 @@ class Runtime(ops.OpsTrait):
             ops.Ops.ABS: self.abs_op,
             # reductions
             ops.Ops.SUM: self.sum_op,
+            ops.Ops.CONST: self.const,
         }[op]
 
         if other is not None:
-            return fn(other)
-        return fn()
+            return fn(host, other)
+        return fn(host)

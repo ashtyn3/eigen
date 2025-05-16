@@ -1,6 +1,7 @@
 from eigen.dtypes import FastEnum, Eigen_Dtype
 from enum import auto
 from typing import Union
+import os
 
 
 other_consts = Union[int, float]
@@ -61,10 +62,7 @@ class Ops(FastEnum):
     BACKWARD = auto()
 
     # Graph Utilities
-    CREATE_OP = auto()
-    CONNECT = auto()
-    EXECUTE = auto()
-    FORWARD = auto()
+    CONST = auto()
 
     # High-Level NN Ops (Optional)
     RELU = auto()
@@ -79,170 +77,175 @@ class Ops(FastEnum):
 class OpsTrait:
     dtype: Eigen_Dtype
 
-    def __init__(self, host):
-        self.host = host
-        self.dtype = host.dtype
-
-    def op(self, op: Ops, other: other_consts | None = None):
+    def op(
+        self,
+        op: Ops,
+        host: other_consts | None,
+        other: other_consts | None = None,
+    ):
         raise NotImplementedError(
             f"Operation {op} must be implemented in subclass"
         )
 
+    def const(self, host: other_consts):
+        return self.op(Ops.CONST, host)
+
     # Basic Math Ops
-    def add(self, other: other_consts):
-        return self.op(Ops.ADD, other)
 
-    def sub(self, other: other_consts):
-        return self.op(Ops.SUB, other)
+    def add(self, host: other_consts, other: other_consts):
+        return self.op(Ops.ADD, host, other)
 
-    def mul(self, other: other_consts):
-        return self.op(Ops.MUL, other)
+    def sub(self, host: other_consts, other: other_consts):
+        return self.op(Ops.SUB, host, other)
 
-    def div(self, other: other_consts):
-        return self.op(Ops.DIV, other)
+    def mul(self, host: other_consts, other: other_consts):
+        return self.op(Ops.MUL, host, other)
 
-    def pow(self, other: other_consts):
-        return self.op(Ops.POW, other)
+    def div(self, host: other_consts, other: other_consts):
+        return self.op(Ops.DIV, host, other)
 
-    def neg(self):
-        return self.op(Ops.NEG)
+    def pow(self, host: other_consts, other: other_consts):
+        return self.op(Ops.POW, host, other)
 
-    def abs(self):
-        return self.op(Ops.ABS)
+    def neg(self, host: other_consts):
+        return self.op(Ops.NEG, host)
+
+    def abs(self, host: other_consts):
+        return self.op(Ops.ABS, host)
 
     # Reductions
-    def sum(self, axis: int):
-        return self.op(Ops.SUM, axis)
+    def sum(self, host: other_consts, axis: int):
+        return self.op(Ops.SUM, host, axis)
 
-    def mean(self):
-        return self.op(Ops.MEAN)
+    def mean(self, host: other_consts):
+        return self.op(Ops.MEAN, host)
 
-    def prod(self):
-        return self.op(Ops.PROD)
+    def prod(self, host: other_consts):
+        return self.op(Ops.PROD, host)
 
-    def max(self):
-        return self.op(Ops.MAX)
+    def max(self, host: other_consts):
+        return self.op(Ops.MAX, host)
 
-    def min(self):
-        return self.op(Ops.MIN)
+    def min(self, host: other_consts):
+        return self.op(Ops.MIN, host)
 
-    def argmax(self):
-        return self.op(Ops.ARGMAX)
+    def argmax(self, host: other_consts):
+        return self.op(Ops.ARGMAX, host)
 
-    def argmin(self):
-        return self.op(Ops.ARGMIN)
+    def argmin(self, host: other_consts):
+        return self.op(Ops.ARGMIN, host)
 
     # Linear Algebra
-    def matmul(self, other: other_consts):
-        return self.op(Ops.MATMUL, other)
+    def matmul(self, host: other_consts, other: other_consts):
+        return self.op(Ops.MATMUL, host, other)
 
-    def dot(self, other: other_consts):
-        return self.op(Ops.DOT, other)
+    def dot(self, host: other_consts, other: other_consts):
+        return self.op(Ops.DOT, host, other)
 
-    def transpose(self):
-        return self.op(Ops.TRANSPOSE)
+    def transpose(self, host: other_consts):
+        return self.op(Ops.TRANSPOSE, host)
 
-    def reshape(self, shape):
-        return self.op(Ops.RESHAPE, shape)
+    def reshape(self, host: other_consts, shape):
+        return self.op(Ops.RESHAPE, host, shape)
 
-    def flatten(self):
-        return self.op(Ops.FLATTEN)
+    def flatten(self, host: other_consts):
+        return self.op(Ops.FLATTEN, host)
 
-    def diag(self):
-        return self.op(Ops.DIAG)
+    def diag(self, host: other_consts):
+        return self.op(Ops.DIAG, host)
 
-    def inverse(self):
-        return self.op(Ops.INVERSE)
+    def inverse(self, host: other_consts):
+        return self.op(Ops.INVERSE, host)
 
-    def det(self):
-        return self.op(Ops.DET)
+    def det(self, host: other_consts):
+        return self.op(Ops.DET, host)
 
     # Shape & Indexing
-    def shape(self):
-        return self.op(Ops.SHAPE)
+    def shape(self, host: other_consts):
+        return self.op(Ops.SHAPE, host)
 
-    def size(self):
-        return self.op(Ops.SIZE)
+    def size(self, host: other_consts):
+        return self.op(Ops.SIZE, host)
 
-    def slice(self, start, end):
-        return self.op(Ops.SLICE, (start, end))
+    def slice(self, host: other_consts, start, end):
+        return self.op(Ops.SLICE, host, (start, end))
 
-    def gather(self, indices):
-        return self.op(Ops.GATHER, indices)
+    def gather(self, host: other_consts, indices):
+        return self.op(Ops.GATHER, host, indices)
 
-    def scatter(self, indices, updates):
-        return self.op(Ops.SCATTER, (indices, updates))
+    def scatter(self, host: other_consts, indices, updates):
+        return self.op(Ops.SCATTER, host, (indices, updates))
 
-    def expand_dims(self, axis):
-        return self.op(Ops.EXPAND_DIMS, axis)
+    def expand_dims(self, host: other_consts, axis):
+        return self.op(Ops.EXPAND_DIMS, host, axis)
 
-    def squeeze(self, axis):
-        return self.op(Ops.SQUEEZE, axis)
+    def squeeze(self, host: other_consts, axis):
+        return self.op(Ops.SQUEEZE, host, axis)
 
-    def concatenate(self, other, axis):
-        return self.op(Ops.CONCATENATE, (other, axis))
+    def concatenate(self, host: other_consts, other, axis):
+        return self.op(Ops.CONCATENATE, host, (other, axis))
 
-    def stack(self, other, axis):
-        return self.op(Ops.STACK, (other, axis))
+    def stack(self, host: other_consts, other, axis):
+        return self.op(Ops.STACK, host, (other, axis))
 
-    def split(self, num_or_size_splits, axis):
-        return self.op(Ops.SPLIT, (num_or_size_splits, axis))
+    def split(self, host: other_consts, num_or_size_splits, axis):
+        return self.op(Ops.SPLIT, host, (num_or_size_splits, axis))
 
     # Broadcasting
-    def broadcast_to(self, shape):
-        return self.op(Ops.BROADCAST_TO, shape)
+    def broadcast_to(self, host: other_consts, shape):
+        return self.op(Ops.BROADCAST_TO, host, shape)
 
-    def broadcast_shapes(self, other_shape):
-        return self.op(Ops.BROADCAST_SHAPES, other_shape)
+    def broadcast_shapes(self, host: other_consts, other_shape):
+        return self.op(Ops.BROADCAST_SHAPES, host, other_shape)
 
     # Control Flow
-    def cond(self, predicate, true_fn, false_fn):
-        return self.op(Ops.COND, (predicate, true_fn, false_fn))
+    def cond(self, host: other_consts, predicate, true_fn, false_fn):
+        return self.op(Ops.COND, host, (predicate, true_fn, false_fn))
 
-    def while_loop(self, cond_fn, body_fn, loop_vars):
-        return self.op(Ops.WHILE_LOOP, (cond_fn, body_fn, loop_vars))
+    def while_loop(self, host: other_consts, cond_fn, body_fn, loop_vars):
+        return self.op(Ops.WHILE_LOOP, host, (cond_fn, body_fn, loop_vars))
 
-    def stop_gradient(self):
-        return self.op(Ops.STOP_GRADIENT)
+    def stop_gradient(self, host: other_consts):
+        return self.op(Ops.STOP_GRADIENT, host)
 
     # Autodiff
-    def grad(self, wrt):
-        return self.op(Ops.GRAD, wrt)
+    def grad(self, host: other_consts, wrt):
+        return self.op(Ops.GRAD, host, wrt)
 
-    def backward(self):
-        return self.op(Ops.BACKWARD)
+    def backward(self, host: other_consts):
+        return self.op(Ops.BACKWARD, host)
 
     # Graph utilities
-    def create_op(self, name, inputs, fn):
-        return self.op(Ops.CREATE_OP, (name, inputs, fn))
+    def create_op(self, host: other_consts, name, inputs, fn):
+        return self.op(Ops.CREATE_OP, host, (name, inputs, fn))
 
-    def connect(self, other):
-        return self.op(Ops.CONNECT, other)
+    def connect(self, host: other_consts, other):
+        return self.op(Ops.CONNECT, host, other)
 
-    def execute(self):
-        return self.op(Ops.EXECUTE)
+    def execute(self, host: other_consts):
+        return self.op(Ops.EXECUTE, host)
 
-    def forward(self):
-        return self.op(Ops.FORWARD)
+    def forward(self, host: other_consts):
+        return self.op(Ops.FORWARD, host)
 
     # NN Ops
-    def relu(self):
-        return self.op(Ops.RELU)
+    def relu(self, host: other_consts):
+        return self.op(Ops.RELU, host)
 
-    def sigmoid(self):
-        return self.op(Ops.SIGMOID)
+    def sigmoid(self, host: other_consts):
+        return self.op(Ops.SIGMOID, host)
 
-    def softmax(self):
-        return self.op(Ops.SOFTMAX)
+    def softmax(self, host: other_consts):
+        return self.op(Ops.SOFTMAX, host)
 
-    def cross_entropy(self, label):
-        return self.op(Ops.CROSS_ENTROPY, label)
+    def cross_entropy(self, host: other_consts, label):
+        return self.op(Ops.CROSS_ENTROPY, host, label)
 
-    def conv2d(self, kernel):
-        return self.op(Ops.CONV2D, kernel)
+    def conv2d(self, host: other_consts, kernel):
+        return self.op(Ops.CONV2D, host, kernel)
 
-    def max_pool(self, kernel_size):
-        return self.op(Ops.MAX_POOL, kernel_size)
+    def max_pool(self, host: other_consts, kernel_size):
+        return self.op(Ops.MAX_POOL, host, kernel_size)
 
-    def dropout(self, rate):
-        return self.op(Ops.DROPOUT, rate)
+    def dropout(self, host: other_consts, rate):
+        return self.op(Ops.DROPOUT, host, rate)

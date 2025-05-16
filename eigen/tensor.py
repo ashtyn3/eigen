@@ -6,6 +6,8 @@ from eigen.node import Node
 from eigen.device import Device
 import numpy as np
 import math
+import eigen.lazy
+import functools
 
 
 class Tensor:
@@ -14,7 +16,7 @@ class Tensor:
     gpu: bool
     shape: tuple[int, int]
     flat_len: int
-    node: Node
+    _node: Node
     data: None | Consts
     realized: bool
 
@@ -22,13 +24,18 @@ class Tensor:
     def flat_len(self):
         return math.prod(self.shape)
 
+    def __hash__(self):
+        return hash(str(self._buffer) + str(self.shape))
+
     def __init__(
         self,
         shape: tuple[int, int],
         data: list | None = None,
         fill: Consts | None = None,
         dtype: Eigen_Dtype | None = None,
+        node: Node | None = None,
     ):
+        self._node = node
         self.shape = shape
         self.realized = False
         if dtype is None:
@@ -42,7 +49,6 @@ class Tensor:
             self.dtype = dtype
 
         self._buffer = array.array(self.dtype.py_str)
-        self.node = Node(lambda: self)
 
         if fill is not None:
             assert data is None
@@ -59,6 +65,13 @@ class Tensor:
         view = (self.dtype.ctype() * self.flat_len)()
         view[:] = self._buffer
         return view
+
+    @functools.cached_property
+    def node(self):
+        if self._node is None:
+            key = hash(str(self._buffer) + str(self.shape))
+            self._node = Node.make_const(self, key)
+        return self._node
 
     @property
     def nbytes(self):
@@ -82,17 +95,22 @@ class Tensor:
         return np.array(self.data._buffer).reshape(self.data.shape)
 
     def __add__(self, x):
-        def add_kernel(a_data, b_data):
-            return Device().Runtime(a_data).add(b_data)
+        from eigen.ops import Ops
 
-        out = Tensor(self.shape, dtype=self.dtype)
-        out.node = Node(add_kernel, inputs=[self, x])
+        def add_kernel(a_data, b_data):
+            return Device().Runtime().add(a_data, b_data)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(add_kernel, Ops.ADD, inputs=[self, x]),
+        )
 
         return out
 
     def __sub__(self, x):
         def add_kernel(a_data, b_data):
-            return Device().Runtime(a_data).sub(b_data)
+            return Device().Runtime().sub(a_data, b_data)
 
         out = Tensor(self.shape, dtype=self.dtype)
         out.node = Node(add_kernel, inputs=[self, x])
@@ -101,7 +119,7 @@ class Tensor:
 
     def __mul__(self, x):
         def add_kernel(a_data, b_data):
-            return Device().Runtime(a_data).mul(b_data)
+            return Device().Runtime().mul(a_data, b_data)
 
         out = Tensor(self.shape, dtype=self.dtype)
         out.node = Node(add_kernel, inputs=[self, x])
@@ -110,7 +128,7 @@ class Tensor:
 
     def __truediv__(self, x):
         def add_kernel(a_data, b_data):
-            return Device().Runtime(a_data).div(b_data)
+            return Device().Runtime().div(a_data, b_data)
 
         out = Tensor(self.shape, dtype=self.dtype)
         out.node = Node(add_kernel, inputs=[self, x])
@@ -119,7 +137,7 @@ class Tensor:
 
     def sum(self, axis):
         def add_kernel(a_data, axis):
-            return Device().Runtime(a_data).sum(axis)
+            return Device().Runtime().sum(a_data, axis)
 
         out = Tensor(self.shape, dtype=self.dtype)
         out.node = Node(add_kernel, inputs=[self, axis])
