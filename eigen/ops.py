@@ -117,8 +117,8 @@ class OpsTrait:
     def sum(self, host: other_consts, axis: int):
         return self.op(Ops.SUM, host, axis)
 
-    def mean(self, host: other_consts):
-        return self.op(Ops.MEAN, host)
+    def mean(self, host: other_consts, axis: int):
+        return self.op(Ops.MEAN, host, axis)
 
     def prod(self, host: other_consts):
         return self.op(Ops.PROD, host)

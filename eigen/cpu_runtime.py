@@ -7,6 +7,25 @@ from typing import TYPE_CHECKING
 
 from eigen.tensor import Tensor
 from eigen.lazy import LazyOp
+import operator
+from functools import reduce
+
+
+def compute_outer_axis_inner(shape, axis):
+    def prod(seq):
+        return reduce(operator.mul, seq, 1)
+
+    if not shape:
+        raise ValueError("Shape must be non-empty")
+
+    if not (0 <= axis < len(shape)):
+        raise ValueError(f"Axis {axis} is out of bounds for shape {shape}")
+
+    outer = prod(shape[:axis])  # 1 if axis is 0
+    axis_dim = shape[axis]
+    inner = prod(shape[axis + 1 :])  # 1 if axis is last
+
+    return outer, axis_dim, inner
 
 
 class Runtime(ops.OpsTrait):
@@ -75,38 +94,32 @@ class Runtime(ops.OpsTrait):
             [abs(x) for x in host._buffer],
         )
 
-    def sum_op(self, host: Tensor, axis: ops.other_consts = 0):
-        from functools import reduce
+    def sum_op(self, host: Tensor, axis: int = 0):
+        shape = host.shape
+        buffer = host._buffer
 
-        import operator
-
-        # Compute strides for row-major layout
-        strides = []
-        acc = 1
-        for dim in reversed(host.shape):
-            strides.insert(0, acc)
-            acc *= dim
-
-        # Compute outer, axis, and inner sizes
-        outer = reduce(operator.mul, host.shape[:axis], 1)
-        axis_dim = host.shape[axis]
-        inner = reduce(operator.mul, host.shape[axis + 1 :], 1)
+        outer, axis_dim, inner = compute_outer_axis_inner(shape, axis)
 
         result = []
         for o in range(outer):
             for i in range(inner):
-                base = o * axis_dim * inner + i
                 acc = 0
                 for j in range(axis_dim):
-                    idx = base + j * inner
-                    acc += host._buffer[idx]
+                    # Compute flat index for (o, j, i) across axes
+                    # Index = o * axis_dim * inner + j * inner + i
+                    idx = o * axis_dim * inner + j * inner + i
+                    acc += buffer[idx]
                 result.append(acc)
 
-        # Return summed buffer and new shape
-        new_shape = host.shape[:axis] + host.shape[axis + 1 :]
-        if len(new_shape) == 1:
-            new_shape = (1, new_shape[0])
+        new_shape = shape[:axis] + shape[axis + 1 :]
+        if not new_shape:
+            new_shape = (1,)
         return Tensor(new_shape, result)
+
+    def mean_op(self, host: Tensor, axis: int):
+        outer, axis_dim, inner = compute_outer_axis_inner(host.shape, axis)
+        summed = self.sum_op(host, axis)
+        return self.div_op(summed, Tensor(summed.shape, fill=axis_dim))
 
     def op(
         self,
@@ -138,6 +151,7 @@ class Runtime(ops.OpsTrait):
             ops.Ops.SUM: self.sum_op,
             # other
             ops.Ops.CONST: self.const,
+            ops.Ops.MEAN: self.mean_op,
         }[op]
 
         if other is not None:
