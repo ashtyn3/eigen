@@ -81,12 +81,15 @@ class Tensor:
         real = "realized" if self.realized else "unrealized"
         return f"<dtype={self.dtype.name} shape={self.shape} nbytes={
             self.nbytes
-        }> {real}>"
+        } {real}>"
 
     def realize(self):
         self.realized = True
         self.data = self.node.forward()
         return self.data
+
+    def to_numpy(self):
+        return np.array(self._buffer).reshape(self.shape)
 
     def numpy(self):
         if self.realized is False:

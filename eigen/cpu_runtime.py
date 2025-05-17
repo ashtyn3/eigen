@@ -14,7 +14,7 @@ class Runtime(ops.OpsTrait):
 
     def add_op(self, host: Tensor, other: Tensor):
         if host.shape != other.shape:
-            raise ValueError("Add op needs matching shapes")
+            raise ValueError("op needs matching shapes")
 
         return Tensor(
             host.shape,
@@ -23,7 +23,7 @@ class Runtime(ops.OpsTrait):
 
     def sub_op(self, host: Tensor, other: Tensor):
         if host.shape != other.shape:
-            raise ValueError("Add op needs matching shapes")
+            raise ValueError("op needs matching shapes")
 
         return Tensor(
             host.shape,
@@ -32,7 +32,7 @@ class Runtime(ops.OpsTrait):
 
     def mul_op(self, host: Tensor, other: Tensor):
         if host.shape != other.shape:
-            raise ValueError("Add op needs matching shapes")
+            raise ValueError("op needs matching shapes")
 
         return Tensor(
             host.shape,
@@ -41,7 +41,7 @@ class Runtime(ops.OpsTrait):
 
     def div_op(self, host: Tensor, other: Tensor):
         if host.shape != other.shape:
-            raise ValueError("Add op needs matching shapes")
+            raise ValueError("op needs matching shapes")
 
         return Tensor(
             host.shape,
@@ -51,7 +51,7 @@ class Runtime(ops.OpsTrait):
     def pow_op(self, host: Tensor, other: ops.other_consts):
         if isinstance(other, Tensor):
             if host.shape != other.shape:
-                raise ValueError("Add op needs matching shapes")
+                raise ValueError("op needs matching shapes")
 
             return Tensor(
                 host.shape,

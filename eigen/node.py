@@ -54,7 +54,6 @@ class Node:
     def forward(self, cache=None):
         tree = self._walk()
         exec_items = tree.toposort()
-
         results = []
         for item in exec_items:
             inputs = []
