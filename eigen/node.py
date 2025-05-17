@@ -42,27 +42,28 @@ class Node:
 
     @classmethod
     def make_const(cls, tensor, key):
-        tensor_map.set(key, tensor)
+        op = LazyOp(Ops.CONST, srcs=(key,))
+        tensor_map.set(op, tensor)
 
-        def kernel():
-            return LazyOp(Ops.CONST, srcs=(key,))
+        def kernel(*args):
+            return tensor
 
         # no need to include tensor
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
-    def forward(self):
-        exec_items = self._walk().toposort()
+    def forward(self, cache=None):
+        tree = self._walk()
+        exec_items = tree.toposort()
+
         results = []
-        # print(exec_items)
-        for items in exec_items:
+        for item in exec_items:
             inputs = []
-            for s in items.srcs:
-                if s.op == Ops.CONST:
-                    key = s.srcs[0]
-                    inputs.append(tensor_map.get(key))
-                else:
-                    inputs.append(tensor_map.get(s).realize())
-            results.append(self.kernel(*inputs))
+            for src in item.srcs:
+                if (d := tensor_map.get(src)) is not None:
+                    inputs.append(d)
+            res = self.kernel(*inputs)
+            tensor_map.set(item, res)
+            results.append(res)
         return results[-1]
 
     def GPU(self) -> Self:

@@ -85,7 +85,7 @@ class Tensor:
 
     def realize(self):
         self.realized = True
-        self.data = self._node.forward()
+        self.data = self.node.forward()
         return self.data
 
     def numpy(self):
@@ -108,38 +108,16 @@ class Tensor:
 
         return out
 
-    def __sub__(self, x):
-        def add_kernel(a_data, b_data):
-            return Device().Runtime().sub(a_data, b_data)
-
-        out = Tensor(self.shape, dtype=self.dtype)
-        out.node = Node(add_kernel, inputs=[self, x])
-
-        return out
-
     def __mul__(self, x):
+        from eigen.ops import Ops
+
         def add_kernel(a_data, b_data):
             return Device().Runtime().mul(a_data, b_data)
 
-        out = Tensor(self.shape, dtype=self.dtype)
-        out.node = Node(add_kernel, inputs=[self, x])
-
-        return out
-
-    def __truediv__(self, x):
-        def add_kernel(a_data, b_data):
-            return Device().Runtime().div(a_data, b_data)
-
-        out = Tensor(self.shape, dtype=self.dtype)
-        out.node = Node(add_kernel, inputs=[self, x])
-
-        return out
-
-    def sum(self, axis):
-        def add_kernel(a_data, axis):
-            return Device().Runtime().sum(a_data, axis)
-
-        out = Tensor(self.shape, dtype=self.dtype)
-        out.node = Node(add_kernel, inputs=[self, axis])
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(add_kernel, Ops.MUL, inputs=[self, x]),
+        )
 
         return out

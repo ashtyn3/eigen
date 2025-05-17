@@ -30,13 +30,13 @@ class Runtime(ops.OpsTrait):
             [x - y for x, y in zip(self.host._buffer, other._buffer)],
         )
 
-    def mul_op(self, other: Tensor):
-        if self.host.shape != other.shape:
+    def mul_op(self, host: Tensor, other: Tensor):
+        if host.shape != other.shape:
             raise ValueError("Add op needs matching shapes")
 
         return Tensor(
-            self.host.shape,
-            [x * y for x, y in zip(self.host._buffer, other._buffer)],
+            host.shape,
+            [x * y for x, y in zip(host._buffer, other._buffer)],
         )
 
     def div_op(self, other: Tensor):
@@ -114,6 +114,17 @@ class Runtime(ops.OpsTrait):
         host: ops.other_consts,
         other: ops.other_consts | None = None,
     ):
+        # Ensure host is a Tensor, not a LazyOp
+        from eigen.lazy import tensor_map, LazyOp
+
+        if isinstance(host, LazyOp):
+            # Try to get the tensor from the tensor_map
+            tensor = tensor_map.get(host)
+            if tensor is not None:
+                host = tensor
+            else:
+                # If not found, raise a clear error
+                raise TypeError("Cannot resolve LazyOp to Tensor in Runtime.op")
         self.dtype = host.dtype
         fn = {
             ops.Ops.ADD: self.add_op,

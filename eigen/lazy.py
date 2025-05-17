@@ -51,20 +51,22 @@ class LazyOp(metaclass=LazyOpMeta):
     def key(self) -> bytes:
         return hashlib.sha256(
             str((self.op, self.srcs)).encode()
-            + b"".join([s.key for s in self.arg])
+            + b"".join([s.key for s in self.srcs if hasattr(s, "key")])
         ).digest()
 
-    def toposort(self, visited=set(), out=[]) -> list[LazyOp]:
+    def toposort(self, visited=None, out=None) -> list:
+        if visited is None:
+            visited = set()
+        if out is None:
+            out = []
         if self in visited:
             return out
-
+        visited.add(self)
         for inp in self.srcs:
             if isinstance(inp, LazyOp):
                 inp.toposort(visited, out)
-
-        if self.op == eigen.ops.Ops.CONST:
-            return out
-        out.append(self)
+        if self.op != eigen.ops.Ops.CONST:
+            out.append(self)
         return out
 
     def _str_recursive(self, indent):
