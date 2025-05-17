@@ -95,6 +95,9 @@ class Tensor:
         if self.realized is False:
             self.data = self.node.forward()
             self.realized = True
+        if self.data is None:
+            return np.array(self._buffer).reshape(self.shape)
+
         return np.array(self.data._buffer).reshape(self.data.shape)
 
     def __add__(self, x):
@@ -142,13 +145,13 @@ class Tensor:
     def __truediv__(self, x):
         from eigen.ops import Ops
 
-        def add_kernel(a_data, b_data):
+        def div_kernel(a_data, b_data):
             return Device().Runtime().div(a_data, b_data)
 
         out = Tensor(
             self.shape,
             dtype=self.dtype,
-            node=Node(add_kernel, Ops.DIV, inputs=[self, x]),
+            node=Node(div_kernel, Ops.DIV, inputs=[self, x]),
         )
 
         return out

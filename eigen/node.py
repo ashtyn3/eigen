@@ -56,6 +56,10 @@ class Node:
         exec_items = tree.toposort()
         results = []
         for item in exec_items:
+            if (cached := tensor_map.get(item)) is not None:
+                results.append(cached)
+                continue
+
             inputs = []
             for src in item.srcs:
                 if (d := tensor_map.get(src)) is not None:
@@ -63,6 +67,8 @@ class Node:
             res = self.kernel(*inputs)
             tensor_map.set(item, res)
             results.append(res)
+        if len(results) == 0:
+            return None
         return results[-1]
 
     def GPU(self) -> Self:
