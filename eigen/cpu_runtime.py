@@ -21,9 +21,9 @@ def compute_outer_axis_inner(shape, axis):
     if not (0 <= axis < len(shape)):
         raise ValueError(f"Axis {axis} is out of bounds for shape {shape}")
 
-    outer = prod(shape[:axis])  # 1 if axis is 0
+    outer = prod(shape[:axis])
     axis_dim = shape[axis]
-    inner = prod(shape[axis + 1 :])  # 1 if axis is last
+    inner = prod(shape[axis + 1 :])
 
     return outer, axis_dim, inner
 
@@ -105,8 +105,6 @@ class Runtime(ops.OpsTrait):
             for i in range(inner):
                 acc = 0
                 for j in range(axis_dim):
-                    # Compute flat index for (o, j, i) across axes
-                    # Index = o * axis_dim * inner + j * inner + i
                     idx = o * axis_dim * inner + j * inner + i
                     acc += buffer[idx]
                 result.append(acc)
