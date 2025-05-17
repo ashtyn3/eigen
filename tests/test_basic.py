@@ -1,8 +1,7 @@
 from eigen import Tensor
 
 
-b = Tensor.ones((3, 2))
+b = Tensor.arrange(start=10, stop=15)
 
 
-print(b.numpy().mean(axis=1))
-print(b.mean(1).numpy())
+print(b.numpy())

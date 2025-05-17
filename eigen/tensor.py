@@ -31,6 +31,11 @@ class Tensor:
     def ones(cls, shape: tuple):
         return cls(shape, fill=1)
 
+    @classmethod
+    def arrange(cls, stop, start=0, step=1):
+        data = list(range(start, stop, step))
+        return cls((len(data),), data=data)
+
     def __init__(
         self,
         shape: tuple,
