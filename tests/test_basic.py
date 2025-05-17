@@ -1,7 +1,7 @@
 from eigen import Tensor
 
 
-b = Tensor((3, 2), fill=1)
+b = Tensor.ones((3, 2))
 
 
 print(b.numpy().mean(axis=1))

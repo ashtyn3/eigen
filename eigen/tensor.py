@@ -27,9 +27,13 @@ class Tensor:
     def __hash__(self):
         return hash(str(self._buffer) + str(self.shape))
 
+    @classmethod
+    def ones(cls, shape: tuple):
+        return cls(shape, fill=1)
+
     def __init__(
         self,
-        shape: tuple[int, int],
+        shape: tuple,
         data: list | None = None,
         fill: Consts | None = None,
         dtype: Eigen_Dtype | None = None,
