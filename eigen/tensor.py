@@ -155,3 +155,17 @@ class Tensor:
         )
 
         return out
+
+    def sum(self, axis=0):
+        from eigen.ops import Ops
+
+        def div_kernel(host, a):
+            return Device().Runtime().sum(host, a)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(div_kernel, Ops.SUM, inputs=[self, axis]),
+        )
+
+        return out

@@ -64,6 +64,9 @@ class Node:
             for src in item.srcs:
                 if (d := tensor_map.get(src)) is not None:
                     inputs.append(d)
+                else:
+                    inputs.append(src)
+
             res = self.kernel(*inputs)
             tensor_map.set(item, res)
             results.append(res)
