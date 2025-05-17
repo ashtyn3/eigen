@@ -21,13 +21,13 @@ class Runtime(ops.OpsTrait):
             [x + y for x, y in zip(other._buffer, host._buffer)],
         )
 
-    def sub_op(self, other: Tensor):
-        if self.host.shape != other.shape:
+    def sub_op(self, host: Tensor, other: Tensor):
+        if host.shape != other.shape:
             raise ValueError("Add op needs matching shapes")
 
         return Tensor(
-            self.host.shape,
-            [x - y for x, y in zip(self.host._buffer, other._buffer)],
+            host.shape,
+            [x - y for x, y in zip(host._buffer, other._buffer)],
         )
 
     def mul_op(self, host: Tensor, other: Tensor):
@@ -39,43 +39,43 @@ class Runtime(ops.OpsTrait):
             [x * y for x, y in zip(host._buffer, other._buffer)],
         )
 
-    def div_op(self, other: Tensor):
-        if self.host.shape != other.shape:
+    def div_op(self, host: Tensor, other: Tensor):
+        if host.shape != other.shape:
             raise ValueError("Add op needs matching shapes")
 
         return Tensor(
-            self.host.shape,
-            [x / y for x, y in zip(self.host._buffer, other._buffer)],
+            host.shape,
+            [x / y for x, y in zip(host._buffer, other._buffer)],
         )
 
-    def pow_op(self, other: ops.other_consts):
+    def pow_op(self, host: Tensor, other: ops.other_consts):
         if isinstance(other, Tensor):
-            if self.host.shape != other.shape:
+            if host.shape != other.shape:
                 raise ValueError("Add op needs matching shapes")
 
             return Tensor(
-                self.host.shape,
-                [(x**y) for x, y in zip(self.host._buffer, other._buffer)],
+                host.shape,
+                [(x**y) for x, y in zip(host._buffer, other._buffer)],
             )
         else:
             return Tensor(
-                self.host.shape,
-                [x**other for x in self.host._buffer],
+                host.shape,
+                [x**other for x in host._buffer],
             )
 
-    def neg_op(self):
+    def neg_op(self, host: Tensor):
         return Tensor(
-            self.host.shape,
-            [-x for x in self.host._buffer],
+            host.shape,
+            [-x for x in host._buffer],
         )
 
-    def abs_op(self):
+    def abs_op(self, host: Tensor):
         return Tensor(
-            self.host.shape,
-            [abs(x) for x in self.host._buffer],
+            host.shape,
+            [abs(x) for x in host._buffer],
         )
 
-    def sum_op(self, axis: ops.other_consts = 0):
+    def sum_op(self, host: Tensor, axis: ops.other_consts = 0):
         from functools import reduce
 
         import operator
@@ -83,14 +83,14 @@ class Runtime(ops.OpsTrait):
         # Compute strides for row-major layout
         strides = []
         acc = 1
-        for dim in reversed(self.host.shape):
+        for dim in reversed(host.shape):
             strides.insert(0, acc)
             acc *= dim
 
         # Compute outer, axis, and inner sizes
-        outer = reduce(operator.mul, self.host.shape[:axis], 1)
-        axis_dim = self.host.shape[axis]
-        inner = reduce(operator.mul, self.host.shape[axis + 1 :], 1)
+        outer = reduce(operator.mul, host.shape[:axis], 1)
+        axis_dim = host.shape[axis]
+        inner = reduce(operator.mul, host.shape[axis + 1 :], 1)
 
         result = []
         for o in range(outer):
@@ -99,11 +99,11 @@ class Runtime(ops.OpsTrait):
                 acc = 0
                 for j in range(axis_dim):
                     idx = base + j * inner
-                    acc += self.host._buffer[idx]
+                    acc += host._buffer[idx]
                 result.append(acc)
 
         # Return summed buffer and new shape
-        new_shape = self.host.shape[:axis] + self.host.shape[axis + 1 :]
+        new_shape = host.shape[:axis] + host.shape[axis + 1 :]
         if len(new_shape) == 1:
             new_shape = (1, new_shape[0])
         return Tensor(new_shape, result)

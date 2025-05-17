@@ -108,6 +108,20 @@ class Tensor:
 
         return out
 
+    def __sub__(self, x):
+        from eigen.ops import Ops
+
+        def add_kernel(a_data, b_data):
+            return Device().Runtime().sub(a_data, b_data)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(add_kernel, Ops.SUB, inputs=[self, x]),
+        )
+
+        return out
+
     def __mul__(self, x):
         from eigen.ops import Ops
 
@@ -118,6 +132,20 @@ class Tensor:
             self.shape,
             dtype=self.dtype,
             node=Node(add_kernel, Ops.MUL, inputs=[self, x]),
+        )
+
+        return out
+
+    def __truediv__(self, x):
+        from eigen.ops import Ops
+
+        def add_kernel(a_data, b_data):
+            return Device().Runtime().div(a_data, b_data)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(add_kernel, Ops.DIV, inputs=[self, x]),
         )
 
         return out
