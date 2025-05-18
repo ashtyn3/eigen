@@ -1,3 +1,4 @@
+from __future__ import annotations
 import array
 import ctypes
 import os
@@ -9,6 +10,7 @@ import numpy as np
 import math
 import eigen.lazy
 import functools
+from typing import Union
 
 
 class Tensor:

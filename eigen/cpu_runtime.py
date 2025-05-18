@@ -29,10 +29,17 @@ def compute_outer_axis_inner(shape, axis):
     return outer, axis_dim, inner
 
 
+def broadcast_scalar(shape: tuple, x: Union[int, float]) -> Tensor:
+    if not isinstance(x, Tensor):
+        return Tensor.fill(shape, x)
+    return x
+
+
 class Runtime(ops.OpsTrait):
     dtype: Eigen_Dtype
 
     def add_op(self, host: Tensor, other: Tensor):
+        other = broadcast_scalar(host.shape, other)
         if host.shape != other.shape:
             raise ValueError("op needs matching shapes")
 
@@ -42,6 +49,7 @@ class Runtime(ops.OpsTrait):
         )
 
     def sub_op(self, host: Tensor, other: Tensor):
+        other = broadcast_scalar(host.shape, other)
         if host.shape != other.shape:
             raise ValueError("op needs matching shapes")
 
@@ -51,6 +59,7 @@ class Runtime(ops.OpsTrait):
         )
 
     def mul_op(self, host: Tensor, other: Tensor):
+        other = broadcast_scalar(host.shape, other)
         if host.shape != other.shape:
             raise ValueError("op needs matching shapes")
 
@@ -60,6 +69,7 @@ class Runtime(ops.OpsTrait):
         )
 
     def div_op(self, host: Tensor, other: Tensor):
+        other = broadcast_scalar(host.shape, other)
         if host.shape != other.shape:
             raise ValueError("op needs matching shapes")
 
