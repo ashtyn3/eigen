@@ -55,26 +55,35 @@ class Node:
 
     def debug(self):
         tree = self._walk().toposort(debug=True)
-        print("step \t op\t\t args")
+        print(f"{'step':<4} {'name':<6} {'op':<10} args")
+
+        op_ids = {}
         items = []
-        found = {}
+        counter = 0
+
         for i, op in enumerate(tree):
+            if op not in op_ids:
+                op_ids[op] = f"op{counter}"
+                counter += 1
+
             args = []
             for s in op.srcs:
                 if isinstance(s, LazyOp):
-                    if found.get(s) is not None:
-                        args.append(f"{s.op}_{found.get(s)}")
-                    else:
-                        args.append(f"{s.op}")
+                    if s not in op_ids:
+                        op_ids[s] = f"op{counter}"
+                        counter += 1
+                    args.append(op_ids[s])
                 else:
-                    if items.__contains__(s):
-                        args.append(f"{items.index(s)}")
+                    if op.op == Ops.CONST:
+                        if s in items:
+                            args.append(str(items.index(s)))
+                        else:
+                            items.append(s)
+                            args.append(str(len(items) - 1))
                     else:
-                        items.append(s)
-                        args.append(f"{len(items)}")
-                        found[op] = len(items)
+                        args.append(str(s))
 
-            print(f"{i}:\t", op.op, "\t", ", ".join(args))
+            print(f"{i:<4} {op_ids[op]:<6} {str(op.op):<10} {', '.join(args)}")
 
     def forward(self, cache=None):
         tree = self._walk()
