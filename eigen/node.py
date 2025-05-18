@@ -79,10 +79,10 @@ class Node:
                 else:
                     if op.op == Ops.CONST:
                         if s in items:
-                            args.append(str(items.index(s)))
+                            args.append("#" + str(items.index(s)))
                         else:
                             items.append(s)
-                            args.append(str(len(items) - 1))
+                            args.append("#" + str(len(items) - 1))
                     else:
                         args.append(str(s))
 

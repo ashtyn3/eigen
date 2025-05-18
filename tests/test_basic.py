@@ -8,4 +8,3 @@ z = a + b
 
 b = z.sum(0)
 print(b.numpy())
-# print(b.numpy())
