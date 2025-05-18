@@ -6,19 +6,21 @@ import functools
 import hashlib
 
 
-class GlobalTensorMap:
-    _map = weakref.WeakValueDictionary()
+class GlobalMap:
+    def __init__(self):
+        self._map = weakref.WeakValueDictionary()
 
-    @classmethod
+    # @classmethod
     def set(cls, key, tensor):
         cls._map[key] = tensor
 
-    @classmethod
+    # @classmethod
     def get(cls, key):
         return cls._map.get(key)
 
 
-tensor_map = GlobalTensorMap()
+tensor_map = GlobalMap()
+node_map = GlobalMap()
 
 
 class LazyOpMeta(type):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Self, Union
 import hashlib
 
-from eigen.lazy import LazyOp, tensor_map
+from eigen.lazy import LazyOp, tensor_map, node_map
 from eigen.ops import Ops
 
 if TYPE_CHECKING:
@@ -37,6 +37,8 @@ class Node:
                 input_ops.append(inp)
 
         op = LazyOp(self.op, input_ops)
+        if node_map.get(op) is None:
+            node_map.set(op, self)
 
         return op
 
@@ -46,31 +48,33 @@ class Node:
         tensor_map.set(op, tensor)
 
         def kernel(*args):
-            return tensor
+            return None
 
         # no need to include tensor
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
     def forward(self, cache=None):
+        # Use the global tensor_map for caching
         tree = self._walk()
         exec_items = tree.toposort()
         results = []
+
         for item in exec_items:
-            if (cached := tensor_map.get(item)) is not None:
+            cached = tensor_map.get(item)
+            if cached is not None:
                 results.append(cached)
                 continue
 
             inputs = []
             for src in item.srcs:
-                if (d := tensor_map.get(src)) is not None:
-                    inputs.append(d)
-                else:
-                    inputs.append(src)
+                d = tensor_map.get(src)
+                inputs.append(d if d is not None else src)
 
-            res = self.kernel(*inputs)
+            res = node_map.get(item).kernel(*inputs)
             tensor_map.set(item, res)
             results.append(res)
-        if len(results) == 0:
+
+        if not results:
             return None
         return results[-1]
 
