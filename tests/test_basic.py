@@ -1,12 +1,9 @@
 from eigen import Tensor
 
 
-a = Tensor((4, 4), fill=1)
-b = Tensor((4, 4), fill=2)
-z = a + b
-z = z * z
+a = Tensor.arrange(8).reshape((4, 2))
 
 
-b = z.sum(0)
-print(b.numpy())
-print(b.reshape((2, 2)).realize())
+b = (a * Tensor.fill((4, 2), 0.5)).reshape((2, 4))
+
+print(a, b)

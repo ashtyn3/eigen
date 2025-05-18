@@ -33,6 +33,10 @@ class Tensor:
         return cls(shape, fill=1)
 
     @classmethod
+    def fill(cls, shape: tuple, fill):
+        return cls(shape, fill=fill)
+
+    @classmethod
     def arrange(cls, stop, start=0, step=1):
         data = list(range(start, stop, step))
         return cls((len(data),), data=data)
