@@ -7,5 +7,4 @@ z = a + a
 
 b = z.matmul(z)
 print(b.numpy())
-print(b._node._walk().toposort())
 # print(b.numpy())

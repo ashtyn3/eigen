@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from typing import TYPE_CHECKING, Callable, Self, Union
 import hashlib
@@ -50,11 +51,18 @@ class Node:
         def kernel(*args):
             return None
 
-        # no need to include tensor
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
+    def debug(self):
+        tree = self._walk().toposort()
+        print("step \t op\t\t args")
+        for i, op in enumerate(tree):
+            args = []
+            for s in op.srcs:
+                args.append(f"{s.op}")
+            print(f"{i}:\t", op.op, "\t", ", ".join(args))
+
     def forward(self, cache=None):
-        # Use the global tensor_map for caching
         tree = self._walk()
         exec_items = tree.toposort()
         results = []

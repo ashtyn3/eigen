@@ -1,5 +1,6 @@
 import array
 import ctypes
+import os
 
 from eigen.dtypes import Consts, Eigen_Dtype, py
 from eigen.node import Node
@@ -119,6 +120,9 @@ class Tensor:
         return np.array(self._buffer).reshape(self.shape)
 
     def numpy(self):
+        if os.getenv("DEBUG", 0):
+            self.node.debug()
+
         if self.realized is False:
             self.data = self.node.forward()
             self.realized = True
