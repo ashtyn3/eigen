@@ -242,3 +242,17 @@ class Tensor:
         )
 
         return out
+
+    def reshape(self, shape: tuple):
+        from eigen.ops import Ops
+
+        def reshape_kernel(host, shape):
+            return Device().Runtime().reshape(host, shape)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(reshape_kernel, Ops.RESHAPE, inputs=[self, shape]),
+        )
+
+        return out

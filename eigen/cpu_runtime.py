@@ -195,6 +195,13 @@ class Runtime(ops.OpsTrait):
             new_shape = (1,)
         return Tensor(new_shape, result)
 
+    def reshape_op(self, host: Tensor, shape: tuple):
+        old_len = host.flat_len
+        new_len = reduce(operator.mul, shape, 1)
+        assert new_len == old_len
+        host.shape = shape
+        return host
+
     def op(
         self,
         op: ops.Ops,
@@ -227,6 +234,8 @@ class Runtime(ops.OpsTrait):
             ops.Ops.PROD: self.prod_op,
             # other
             ops.Ops.CONST: self.const,
+            ops.Ops.RESHAPE: self.reshape_op,
+            # linear algebra
             ops.Ops.MATMUL: self.matmul_op,
         }[op]
 
