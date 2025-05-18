@@ -112,6 +112,8 @@ class Tensor:
         } {real}>"
 
     def realize(self):
+        if int(os.getenv("DEBUG", "0")):
+            self.node.debug()
         self.realized = True
         self.data = self.node.forward()
         return self.data
@@ -120,7 +122,7 @@ class Tensor:
         return np.array(self._buffer).reshape(self.shape)
 
     def numpy(self):
-        if os.getenv("DEBUG", 0):
+        if int(os.getenv("DEBUG", "0")):
             self.node.debug()
 
         if self.realized is False:
