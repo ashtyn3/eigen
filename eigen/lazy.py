@@ -56,7 +56,7 @@ class LazyOp(metaclass=LazyOpMeta):
             + b"".join([s.key for s in self.srcs if hasattr(s, "key")])
         ).digest()
 
-    def toposort(self, visited=None, out=None) -> list:
+    def toposort(self, visited=None, out=None, debug=False) -> list:
         if visited is None:
             visited = set()
         if out is None:
@@ -66,9 +66,11 @@ class LazyOp(metaclass=LazyOpMeta):
         visited.add(self)
         for inp in self.srcs:
             if isinstance(inp, LazyOp):
-                inp.toposort(visited, out)
-        if self.op != eigen.ops.Ops.CONST:
+                inp.toposort(visited, out, debug=debug)
+
+        if self.op != eigen.ops.Ops.CONST or debug:
             out.append(self)
+
         return out
 
     def _str_recursive(self, indent):

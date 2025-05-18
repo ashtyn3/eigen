@@ -54,12 +54,26 @@ class Node:
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
     def debug(self):
-        tree = self._walk().toposort()
+        tree = self._walk().toposort(debug=True)
         print("step \t op\t\t args")
+        items = []
+        found = {}
         for i, op in enumerate(tree):
             args = []
             for s in op.srcs:
-                args.append(f"{s.op}")
+                if isinstance(s, LazyOp):
+                    if found.get(s) is not None:
+                        args.append(f"{s.op}_{found.get(s)}")
+                    else:
+                        args.append(f"{s.op}")
+                else:
+                    if items.__contains__(s):
+                        args.append(f"{items.index(s)}")
+                    else:
+                        items.append(s)
+                        args.append(f"{len(items)}")
+                        found[op] = len(items)
+
             print(f"{i}:\t", op.op, "\t", ", ".join(args))
 
     def forward(self, cache=None):
