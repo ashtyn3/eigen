@@ -37,12 +37,21 @@ class Tensor:
         return cls((len(data),), data=data)
 
     def _get(self, *idx):
-        assert len(self.shape) == len(idx), "Index rank must match shape rank"
+        # idx: tuple of indices, one per dimension
+        if len(idx) == 1 and isinstance(idx[0], (tuple, list)):
+            idx = tuple(idx[0])  # Allow passing a tuple/list directly
+
+        assert len(self.shape) == len(idx), f"Index rank {
+            len(idx)
+        } must match shape rank {len(self.shape)}"
+
+        # Compute the flat index
         flat_idx = 0
         stride = 1
         for s, i in zip(reversed(self.shape), reversed(idx)):
             flat_idx += i * stride
             stride *= s
+
         return self._buffer[flat_idx]
 
     def __init__(
@@ -205,13 +214,27 @@ class Tensor:
     def matmul(self, x):
         from eigen.ops import Ops
 
-        def div_kernel(host, a):
+        def matmul_kernel(host, a):
             return Device().Runtime().matmul(host, a)
 
         out = Tensor(
             self.shape,
             dtype=self.dtype,
-            node=Node(div_kernel, Ops.MATMUL, inputs=[self, x]),
+            node=Node(matmul_kernel, Ops.MATMUL, inputs=[self, x]),
+        )
+
+        return out
+
+    def prod(self):
+        from eigen.ops import Ops
+
+        def prod_kernel(host):
+            return Device().Runtime().prod(host)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(prod_kernel, Ops.MATMUL, inputs=[self]),
         )
 
         return out

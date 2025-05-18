@@ -1,3 +1,4 @@
+import itertools
 import os
 import eigen.ops as ops
 from eigen.dtypes import Eigen_Dtype
@@ -120,23 +121,79 @@ class Runtime(ops.OpsTrait):
         return self.div_op(summed, Tensor(summed.shape, fill=axis_dim))
 
     def matmul_op(self, host: Tensor, other: Tensor):
-        B, M, N = host.shape
-        _, N2, P = other.shape
+        host_shape = host.shape
+        other_shape = other.shape
+
+        assert len(host_shape) >= 2 and len(other_shape) >= 2, (
+            "Tensors must be at least 2D"
+        )
+        M, N = host_shape[-2], host_shape[-1]
+        N2, P = other_shape[-2], other_shape[-1]
         assert N == N2, "Inner dimensions must match"
 
+        # Broadcast batch dimensions
+        batch_shape = []
+        for h, o in itertools.zip_longest(
+            host_shape[:-2], other_shape[:-2], fillvalue=1
+        ):
+            if h == o or h == 1 or o == 1:
+                batch_shape.append(max(h, o))
+            else:
+                raise ValueError(
+                    f"Batch dimensions not broadcastable: {host_shape[:-2]} vs {
+                        other_shape[:-2]
+                    }"
+                )
+
+        out_shape = tuple(batch_shape) + (M, P)
         result = []
 
-        for b in range(B):
+        # Generate all batch indices
+        batch_indices = (
+            list(itertools.product(*[range(s) for s in batch_shape]))
+            if batch_shape
+            else [()]
+        )
+
+        for batch_idx in batch_indices:
+            # Map batch_idx to host and other, handling broadcasting
+            host_batch_idx = []
+            other_batch_idx = []
+            for i, s in enumerate(batch_shape):
+                h_dim = host_shape[i] if i < len(host_shape) - 2 else 1
+                o_dim = other_shape[i] if i < len(other_shape) - 2 else 1
+                host_batch_idx.append(batch_idx[i] if h_dim > 1 else 0)
+                other_batch_idx.append(batch_idx[i] if o_dim > 1 else 0)
             for i in range(M):
                 for j in range(P):
-                    sum = 0
+                    acc = 0
                     for k in range(N):
-                        a = host._get(b, i, k)
-                        b_val = other._get(b, k, j)
-                        sum += a * b_val
-                    result.append(sum)
+                        host_idx = tuple(host_batch_idx) + (i, k)
+                        other_idx = tuple(other_batch_idx) + (k, j)
+                        acc += host._get(*host_idx) * other._get(*other_idx)
+                    result.append(acc)
 
-        return Tensor((B, M, P), result)
+        return Tensor(out_shape, result)
+
+    def prod_op(self, host: Tensor, axis: int = 0):
+        shape = host.shape
+        buffer = host._buffer
+
+        outer, axis_dim, inner = compute_outer_axis_inner(shape, axis)
+
+        result = []
+        for o in range(outer):
+            for i in range(inner):
+                acc = 1
+                for j in range(axis_dim):
+                    idx = o * axis_dim * inner + j * inner + i
+                    acc *= host._buffer[idx]
+                result.append(acc)
+
+        new_shape = shape[:axis] + shape[axis + 1 :]
+        if not new_shape:
+            new_shape = (1,)
+        return Tensor(new_shape, result)
 
     def op(
         self,
@@ -167,6 +224,7 @@ class Runtime(ops.OpsTrait):
             # reductions
             ops.Ops.SUM: self.sum_op,
             ops.Ops.MEAN: self.mean_op,
+            ops.Ops.PROD: self.prod_op,
             # other
             ops.Ops.CONST: self.const,
             ops.Ops.MATMUL: self.matmul_op,
