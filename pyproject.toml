@@ -11,6 +11,7 @@ dependencies = [
     "numpy>=2.2.5",
     "pyobjc>=11.0",
     "pyobjc-framework-metal>=11.0",
+    "tabulate>=0.9.0",
 ]
 
 [tool.hatch.build.targets.wheel]

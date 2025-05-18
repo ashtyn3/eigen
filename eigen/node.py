@@ -54,8 +54,11 @@ class Node:
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
     def debug(self):
+        from tabulate import tabulate
+
         tree = self._walk().toposort(debug=True)
-        print(f"{'step':<4} {'name':<6} {'op':<10} args")
+        headers = ["step", "name", "op", "args"]
+        table = []
 
         op_ids = {}
         items = []
@@ -83,7 +86,9 @@ class Node:
                     else:
                         args.append(str(s))
 
-            print(f"{i:<4} {op_ids[op]:<6} {str(op.op):<10} {', '.join(args)}")
+            table.append([i, op_ids[op], str(op.op), ", ".join(args)])
+
+        print(tabulate(table, headers=headers, tablefmt="rounded_grid"))
 
     def forward(self, cache=None):
         tree = self._walk()
