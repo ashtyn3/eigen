@@ -1,7 +1,7 @@
 from eigen import Tensor
 
 
-b = Tensor.arrange(start=10, stop=15)
+b = Tensor.ones((2, 3, 3))
 
 
-print(b.numpy())
+print(b.matmul(b).numpy())

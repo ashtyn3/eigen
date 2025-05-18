@@ -119,6 +119,25 @@ class Runtime(ops.OpsTrait):
         summed = self.sum_op(host, axis)
         return self.div_op(summed, Tensor(summed.shape, fill=axis_dim))
 
+    def matmul_op(self, host: Tensor, other: Tensor):
+        B, M, N = host.shape
+        _, N2, P = other.shape
+        assert N == N2, "Inner dimensions must match"
+
+        result = []
+
+        for b in range(B):
+            for i in range(M):
+                for j in range(P):
+                    sum = 0
+                    for k in range(N):
+                        a = host._get(b, i, k)
+                        b_val = other._get(b, k, j)
+                        sum += a * b_val
+                    result.append(sum)
+
+        return Tensor((B, M, P), result)
+
     def op(
         self,
         op: ops.Ops,
@@ -147,9 +166,10 @@ class Runtime(ops.OpsTrait):
             ops.Ops.ABS: self.abs_op,
             # reductions
             ops.Ops.SUM: self.sum_op,
+            ops.Ops.MEAN: self.mean_op,
             # other
             ops.Ops.CONST: self.const,
-            ops.Ops.MEAN: self.mean_op,
+            ops.Ops.MATMUL: self.matmul_op,
         }[op]
 
         if other is not None:

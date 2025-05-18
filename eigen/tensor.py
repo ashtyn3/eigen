@@ -36,6 +36,15 @@ class Tensor:
         data = list(range(start, stop, step))
         return cls((len(data),), data=data)
 
+    def _get(self, *idx):
+        assert len(self.shape) == len(idx), "Index rank must match shape rank"
+        flat_idx = 0
+        stride = 1
+        for s, i in zip(reversed(self.shape), reversed(idx)):
+            flat_idx += i * stride
+            stride *= s
+        return self._buffer[flat_idx]
+
     def __init__(
         self,
         shape: tuple,
@@ -189,6 +198,20 @@ class Tensor:
             self.shape,
             dtype=self.dtype,
             node=Node(div_kernel, Ops.MEAN, inputs=[self, axis]),
+        )
+
+        return out
+
+    def matmul(self, x):
+        from eigen.ops import Ops
+
+        def div_kernel(host, a):
+            return Device().Runtime().matmul(host, a)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(div_kernel, Ops.MATMUL, inputs=[self, x]),
         )
 
         return out
