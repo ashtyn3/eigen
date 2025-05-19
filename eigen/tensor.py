@@ -39,7 +39,7 @@ class Tensor:
         return cls(shape, fill=fill)
 
     @classmethod
-    def arrange(cls, stop, start=0, step=1):
+    def arange(cls, stop, start=0, step=1):
         data = list(range(start, stop, step))
         return cls((len(data),), data=data)
 
