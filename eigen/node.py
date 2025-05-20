@@ -2,7 +2,9 @@ from __future__ import annotations
 import os
 
 from typing import TYPE_CHECKING, Callable, Self, Union
-import hashlib
+from functools import cached_property
+import inspect
+
 
 from eigen.lazy import LazyOp, tensor_map, node_map
 from eigen.ops import Ops
@@ -20,6 +22,10 @@ class Node:
     kernel: GenericKernel
     gpu: bool
     computed: bool
+
+    @cached_property
+    def _source(self):
+        return inspect.getsource(self.kernel)
 
     def __init__(self, kernel: GenericKernel, op, inputs=[]):
         self.kernel = kernel

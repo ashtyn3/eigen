@@ -168,7 +168,6 @@ class Runtime(ops.OpsTrait):
 
     def prod_op(self, host: Tensor, axis: int = 0):
         shape = host.shape
-        buffer = host._buffer
 
         outer, axis_dim, inner = compute_outer_axis_inner(shape, axis)
 
