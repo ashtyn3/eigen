@@ -2,6 +2,7 @@ import itertools
 import os
 import eigen.ops as ops
 from eigen.dtypes import Eigen_Dtype
+from eigen.broadcast import BroadcastView
 from typing import Union
 
 from typing import TYPE_CHECKING
@@ -29,9 +30,9 @@ def compute_outer_axis_inner(shape, axis):
     return outer, axis_dim, inner
 
 
-def broadcast_scalar(shape: tuple, x: Union[int, float]) -> Tensor:
+def broadcast(host: Tensor, x: Union[int, float, Tensor]):
     if not isinstance(x, Tensor):
-        return Tensor.fill(shape, x)
+        return Tensor.fill(host.shape, x)._buffer
     return x
 
 
@@ -39,59 +40,49 @@ class Runtime(ops.OpsTrait):
     dtype: Eigen_Dtype
 
     def add_op(self, host: Tensor, other: Tensor):
-        other = broadcast_scalar(host.shape, other)
-        if host.shape != other.shape:
-            raise ValueError("op needs matching shapes")
-
+        to = BroadcastView(other, host.shape).to_shape
+        # if host.shape != other.shape:
+        #     raise ValueError("op needs matching shapes")
         return Tensor(
-            host.shape,
-            [x + y for x, y in zip(other._buffer, host._buffer)],
+            to,
+            [x + y for x, y in zip(BroadcastView(other, to), host._buffer)],
         )
 
     def sub_op(self, host: Tensor, other: Tensor):
-        other = broadcast_scalar(host.shape, other)
-        if host.shape != other.shape:
-            raise ValueError("op needs matching shapes")
-
+        to = BroadcastView(other, host.shape).to_shape
+        # if host.shape != other.shape:
+        #     raise ValueError("op needs matching shapes")
         return Tensor(
-            host.shape,
-            [x - y for x, y in zip(host._buffer, other._buffer)],
+            to,
+            [x - y for x, y in zip(host._buffer, BroadcastView(other, to))],
         )
 
     def mul_op(self, host: Tensor, other: Tensor):
-        other = broadcast_scalar(host.shape, other)
-        if host.shape != other.shape:
-            raise ValueError("op needs matching shapes")
-
+        to = BroadcastView(other, host.shape).to_shape
+        # if host.shape != other.shape:
+        #     raise ValueError("op needs matching shapes")
         return Tensor(
-            host.shape,
-            [x * y for x, y in zip(host._buffer, other._buffer)],
+            to,
+            [x * y for x, y in zip(host._buffer, BroadcastView(other, to))],
         )
 
     def div_op(self, host: Tensor, other: Tensor):
-        other = broadcast_scalar(host.shape, other)
-        if host.shape != other.shape:
-            raise ValueError("op needs matching shapes")
-
+        to = BroadcastView(other, host.shape).to_shape
+        # if host.shape != other.shape:
+        #     raise ValueError("op needs matching shapes")
         return Tensor(
-            host.shape,
-            [x / y for x, y in zip(host._buffer, other._buffer)],
+            to,
+            [x / y for x, y in zip(host._buffer, BroadcastView(other, to))],
         )
 
-    def pow_op(self, host: Tensor, other: ops.other_consts):
-        if isinstance(other, Tensor):
-            if host.shape != other.shape:
-                raise ValueError("op needs matching shapes")
-
-            return Tensor(
-                host.shape,
-                [(x**y) for x, y in zip(host._buffer, other._buffer)],
-            )
-        else:
-            return Tensor(
-                host.shape,
-                [x**other for x in host._buffer],
-            )
+    def pow_op(self, host: Tensor, other: Tensor):
+        to = BroadcastView(other, host.shape).to_shape
+        # if host.shape != other.shape:
+        #     raise ValueError("op needs matching shapes")
+        return Tensor(
+            to,
+            [x**y for x, y in zip(host._buffer, BroadcastView(other, to))],
+        )
 
     def neg_op(self, host: Tensor):
         return Tensor(

@@ -35,6 +35,10 @@ class Tensor:
         return cls(shape, fill=1)
 
     @classmethod
+    def zeros(cls, shape: tuple):
+        return cls(shape, fill=0)
+
+    @classmethod
     def fill(cls, shape: tuple, fill):
         return cls(shape, fill=fill)
 
@@ -60,6 +64,12 @@ class Tensor:
             stride *= s
 
         return self._buffer[flat_idx]
+
+    def expand_rank(self, D):
+        shape = self.shape
+        if len(shape) > D:
+            raise ValueError("Shape already has higher rank than target.")
+        return (1,) * (D - len(shape)) + shape
 
     def __init__(
         self,
@@ -97,7 +107,7 @@ class Tensor:
 
     def to_ctype(self) -> ctypes.Array:
         view = (self.dtype.ctype() * self.flat_len)()
-        view[:] = self._buffer
+        view[:] = self._buffer[:]
         return view
 
     @functools.cached_property
@@ -141,6 +151,7 @@ class Tensor:
 
     def __add__(self, x):
         from eigen.ops import Ops
+        from eigen.broadcast import BroadcastView
 
         def add_kernel(a_data, b_data):
             return Device().Runtime().add(a_data, b_data)
@@ -177,6 +188,20 @@ class Tensor:
             self.shape,
             dtype=self.dtype,
             node=Node(add_kernel, Ops.MUL, inputs=[self, x]),
+        )
+
+        return out
+
+    def __pow__(self, x):
+        from eigen.ops import Ops
+
+        def add_kernel(a_data, b_data):
+            return Device().Runtime().pow(a_data, b_data)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(add_kernel, Ops.POW, inputs=[self, x]),
         )
 
         return out
