@@ -8,9 +8,7 @@ from eigen.node import Node
 from eigen.device import Device
 import numpy as np
 import math
-import eigen.lazy
 import functools
-from typing import Union
 
 
 class Tensor:

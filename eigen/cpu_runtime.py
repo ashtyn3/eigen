@@ -1,5 +1,6 @@
 import itertools
-import os
+from concurrent.futures import ThreadPoolExecutor
+
 import eigen.ops as ops
 from eigen.dtypes import Eigen_Dtype
 from eigen.broadcast import BroadcastView
@@ -133,7 +134,7 @@ class Runtime(ops.OpsTrait):
         )
         M, K = a_shape[-2], a_shape[-1]
         K2, N = b_shape[-2], b_shape[-1]
-        assert K == K2, "Inner dimensions must match"
+        assert K == K2, f"Inner dimensions must match: {K} vs {K2}"
 
         # Broadcast batch shape
         batch_shape = []
@@ -154,7 +155,7 @@ class Runtime(ops.OpsTrait):
         result = []
         total_batches = int(math.prod(batch_shape)) if batch_shape else 1
 
-        for b in range(total_batches):
+        def compute_batch(b):
             for i in range(M):
                 for j in range(N):
                     acc = 0
@@ -163,6 +164,9 @@ class Runtime(ops.OpsTrait):
                         b_idx = b * K * N + k * N + j
                         acc += a_view[a_idx] * b_view[b_idx]
                     result.append(acc)
+
+        with ThreadPoolExecutor() as executor:
+            executor.map(compute_batch, range(total_batches))
 
         return Tensor(out_shape, result)
 
