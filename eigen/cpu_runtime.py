@@ -136,7 +136,16 @@ class Runtime(ops.OpsTrait):
         K2, N = b_shape[-2], b_shape[-1]
         assert K == K2, f"Inner dimensions must match: {K} vs {K2}"
 
-        batch_shape = BroadcastView(a, b.shape).to_shape[:-2]
+        batch_shape = []
+        for x, y in itertools.zip_longest(
+            a_shape[:-2], b_shape[:-2], fillvalue=1
+        ):
+            if x == y or x == 1 or y == 1:
+                batch_shape.append(max(x, y))
+            else:
+                raise ValueError(
+                    f"Incompatible batch shapes: {a_shape} vs {b_shape}"
+                )
 
         out_shape = tuple(batch_shape) + (M, N)
         a_view = BroadcastView(a, out_shape[:-2] + (M, K))

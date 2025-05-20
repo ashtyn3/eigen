@@ -22,26 +22,24 @@ class BroadcastView:
         return self.compute_strides(self.from_t.shape)
 
     def _to_shape(self):
-        result = []
-        for t, o in zip(reversed(self.from_t.shape), reversed(self.to_t)):
-            if t == 1:
-                result.append(o)
-            elif o == 1:
-                result.append(t)
-            elif t == o:
-                result.append(t)
-            else:
-                raise ValueError("Cannot broadcast with shapes")
+        from_shape = self.from_t.shape
+        to_shape = self.to_t
 
-        longer = (
-            self.from_t.shape
-            if len(self.from_t.shape) > len(self.to_t)
-            else self.to_t
-        )
-        result.extend(
-            reversed(longer[: abs(len(self.from_t.shape) - len(self.to_t))])
-        )
-        return tuple(reversed(result))
+        # Pad the shorter shape with leading 1s for proper alignment
+        len_diff = len(to_shape) - len(from_shape)
+        if len_diff > 0:
+            from_shape = (1,) * len_diff + from_shape
+        elif len_diff < 0:
+            to_shape = (1,) * (-len_diff) + to_shape
+
+        result = []
+        for t, o in zip(from_shape, to_shape):
+            if t == o or t == 1 or o == 1:
+                result.append(max(t, o))
+            else:
+                raise ValueError(f"Cannot broadcast dimensions: {t} and {o}")
+
+        return tuple(result)
 
     def _map_index(self, idx: int) -> int:
         out_idx = []

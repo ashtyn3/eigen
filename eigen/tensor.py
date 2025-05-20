@@ -10,6 +10,7 @@ import numpy as np
 import math
 import functools
 import random
+from functools import cached_property
 
 
 class Tensor:
@@ -21,7 +22,7 @@ class Tensor:
     _node: Node
     data: None | Consts
 
-    @property
+    @cached_property
     def flat_len(self):
         return math.prod(self.shape)
 

@@ -1,6 +1,7 @@
 from eigen import Tensor
 
 
-n = Tensor.rand((2, 4, 4))
+n = Tensor.rand((4, 2))
+a = Tensor.rand((2, 3))
 
-print(n.matmul(n).numpy())
+print(n.matmul(a).numpy())
