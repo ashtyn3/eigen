@@ -19,12 +19,14 @@ GenericKernel = Callable[..., object]
 class Node:
     kernel: GenericKernel
     gpu: bool
+    computed: bool
 
     def __init__(self, kernel: GenericKernel, op, inputs=[]):
         self.kernel = kernel
         self.gpu = False
         self.inputs: list[Consts] = inputs
         self.op = op
+        self.computed = False
 
     def _walk(self) -> LazyOp:
         from eigen.tensor import Tensor
@@ -91,6 +93,7 @@ class Node:
         print(tabulate(table, headers=headers, tablefmt="rounded_grid"))
 
     def forward(self, cache=None):
+        self.computed = True
         tree = self._walk()
         exec_items = tree.toposort()
         results = []
@@ -107,6 +110,7 @@ class Node:
                 inputs.append(d if d is not None else src)
 
             res = node_map.get(item).kernel(*inputs)
+            node_map.get(item).computed = True
             tensor_map.set(item, res)
             results.append(res)
 

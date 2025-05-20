@@ -21,11 +21,14 @@ class Tensor:
     flat_len: int
     _node: Node
     data: None | Consts
-    realized: bool
 
     @property
     def flat_len(self):
         return math.prod(self.shape)
+
+    @property
+    def realized(self):
+        return self.node.computed
 
     def __hash__(self):
         return hash(str(self._buffer) + str(self.shape))
@@ -81,7 +84,6 @@ class Tensor:
     ):
         self._node = node
         self.shape = shape
-        self.realized = False
         if dtype is None:
             if data is not None:
                 self.dtype = py(data[0])
@@ -130,7 +132,6 @@ class Tensor:
     def realize(self):
         if int(os.getenv("DEBUG", "0")):
             self.node.debug()
-        self.realized = True
         self.data = self.node.forward()
         return self.data
 
@@ -143,7 +144,6 @@ class Tensor:
 
         if self.realized is False:
             self.data = self.node.forward()
-            self.realized = True
         if self.data is None:
             return np.array(self._buffer).reshape(self.shape)
 
@@ -151,7 +151,6 @@ class Tensor:
 
     def __add__(self, x):
         from eigen.ops import Ops
-        from eigen.broadcast import BroadcastView
 
         def add_kernel(a_data, b_data):
             return Device().Runtime().add(a_data, b_data)
