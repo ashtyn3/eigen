@@ -145,18 +145,25 @@ class Runtime(ops.OpsTrait):
         result = []
         total_batches = int(math.prod(batch_shape)) if batch_shape else 1
 
-        def compute_batch(b):
-            for i in range(M):
-                for j in range(N):
-                    acc = 0
-                    for k in range(K):
-                        a_idx = b * M * K + i * K + k
-                        b_idx = b * K * N + k * N + j
-                        acc += a_view[a_idx] * b_view[b_idx]
-                    result.append(acc)
+        def compute_cell(b, i, j):
+            acc = 0
+            for k in range(K):
+                a_idx = b * M * K + i * K + k
+                b_idx = b * K * N + k * N + j
+                acc += a_view[a_idx] * b_view[b_idx]
+            result.append(acc)
 
         with ThreadPoolExecutor() as executor:
-            executor.map(compute_batch, range(total_batches))
+            # executor.map(compute_batch, range(total_batches))
+            executor.map(
+                lambda args: compute_cell(*args),
+                (
+                    (b, i, j)
+                    for b in range(total_batches)
+                    for i in range(M)
+                    for j in range(N)
+                ),
+            )
 
         return Tensor(out_shape, result)
 

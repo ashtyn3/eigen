@@ -9,6 +9,7 @@ from eigen.device import Device
 import numpy as np
 import math
 import functools
+import random
 
 
 class Tensor:
@@ -47,6 +48,11 @@ class Tensor:
     def arange(cls, stop, start=0, step=1):
         data = list(range(start, stop, step))
         return cls((len(data),), data=data)
+
+    @classmethod
+    def rand(cls, shape):
+        random_list = [random.random() for _ in range(math.prod(shape))]
+        return cls(shape, data=random_list)
 
     def _get(self, *idx):
         # idx: tuple of indices, one per dimension

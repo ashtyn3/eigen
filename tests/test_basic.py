@@ -1,6 +1,6 @@
 from eigen import Tensor
 
 
-n = Tensor.fill((2, 2), 2)
+n = Tensor.rand((2, 4, 4))
 
 print(n.matmul(n).numpy())
