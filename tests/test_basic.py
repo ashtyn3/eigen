@@ -2,6 +2,6 @@ from eigen import Tensor
 
 
 a = Tensor.arange(8).reshape((4, 2))
-n = Tensor.zeros((4, 1))
+n = Tensor.fill((2, 2), 2)
 
-print((a**2).numpy())
+print(a.matmul(n).numpy())

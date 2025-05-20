@@ -121,57 +121,47 @@ class Runtime(ops.OpsTrait):
         summed = self.sum_op(host, axis)
         return self.div_op(summed, Tensor(summed.shape, fill=axis_dim))
 
-    def matmul_op(self, host: Tensor, other: Tensor):
-        host_shape = host.shape
-        other_shape = other.shape
+    def matmul_op(self, a: Tensor, b: Tensor):
+        import math
+        from eigen.broadcast import BroadcastView
 
-        assert len(host_shape) >= 2 and len(other_shape) >= 2, (
-            "Tensors must be at least 2D"
+        a_shape = a.shape
+        b_shape = b.shape
+
+        assert len(a_shape) >= 2 and len(b_shape) >= 2, (
+            "Both tensors must be at least 2D"
         )
-        M, N = host_shape[-2], host_shape[-1]
-        N2, P = other_shape[-2], other_shape[-1]
-        assert N == N2, "Inner dimensions must match"
+        M, K = a_shape[-2], a_shape[-1]
+        K2, N = b_shape[-2], b_shape[-1]
+        assert K == K2, "Inner dimensions must match"
 
-        # Broadcast batch dimensions
+        # Broadcast batch shape
         batch_shape = []
-        for h, o in itertools.zip_longest(
-            host_shape[:-2], other_shape[:-2], fillvalue=1
+        for x, y in itertools.zip_longest(
+            a_shape[:-2], b_shape[:-2], fillvalue=1
         ):
-            if h == o or h == 1 or o == 1:
-                batch_shape.append(max(h, o))
+            if x == y or x == 1 or y == 1:
+                batch_shape.append(max(x, y))
             else:
                 raise ValueError(
-                    f"Batch dimensions not broadcastable: {host_shape[:-2]} vs {
-                        other_shape[:-2]
-                    }"
+                    f"Incompatible batch shapes: {a_shape} vs {b_shape}"
                 )
 
-        out_shape = tuple(batch_shape) + (M, P)
+        out_shape = tuple(batch_shape) + (M, N)
+        a_view = BroadcastView(a, out_shape[:-2] + (M, K))
+        b_view = BroadcastView(b, out_shape[:-2] + (K, N))
+
         result = []
+        total_batches = int(math.prod(batch_shape)) if batch_shape else 1
 
-        # Generate all batch indices
-        batch_indices = (
-            list(itertools.product(*[range(s) for s in batch_shape]))
-            if batch_shape
-            else [()]
-        )
-
-        for batch_idx in batch_indices:
-            # Map batch_idx to host and other, handling broadcasting
-            host_batch_idx = []
-            other_batch_idx = []
-            for i, s in enumerate(batch_shape):
-                h_dim = host_shape[i] if i < len(host_shape) - 2 else 1
-                o_dim = other_shape[i] if i < len(other_shape) - 2 else 1
-                host_batch_idx.append(batch_idx[i] if h_dim > 1 else 0)
-                other_batch_idx.append(batch_idx[i] if o_dim > 1 else 0)
+        for b in range(total_batches):
             for i in range(M):
-                for j in range(P):
+                for j in range(N):
                     acc = 0
-                    for k in range(N):
-                        host_idx = tuple(host_batch_idx) + (i, k)
-                        other_idx = tuple(other_batch_idx) + (k, j)
-                        acc += host._get(*host_idx) * other._get(*other_idx)
+                    for k in range(K):
+                        a_idx = b * M * K + i * K + k
+                        b_idx = b * K * N + k * N + j
+                        acc += a_view[a_idx] * b_view[b_idx]
                     result.append(acc)
 
         return Tensor(out_shape, result)
