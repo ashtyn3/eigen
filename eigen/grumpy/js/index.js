@@ -22,26 +22,22 @@ g.setGraph({
 
 async function draw(isUpdate) {
   const data = await (await fetch("/kernels")).json();
-  console.log(data.message);
-  for (let i = 0; i < data.nodes.length; i++) {
+  console.log(data);
+  for (const n of Object.keys(data.nodes)) {
     // if (worker.count > 10000) {
     //   className += " warn";
     // }
-    g.setNode(i, {
+    g.setNode(n, {
       labelType: "html",
       label: `
 <div>
-<span class="label">${data.nodes[i].instruction.op}</span>
-<span class="label">${data.nodes[i].instruction.dtype}</span>
+<span class="label">${data.nodes[n].op}.${data.nodes[n].dtype}</span>
 </div>
 `,
       rx: 5,
       ry: 5,
       padding: 10,
     });
-
-    // if (worker.inputQueue) {
-    // }
   }
   for (const e of data.edges) {
     g.setEdge(e[0], e[1], {
@@ -53,7 +49,6 @@ async function draw(isUpdate) {
 
   inner.call(render, g);
 
-  // Zoom and scale to fit
   var graphWidth = g.graph().width + 80;
   var graphHeight = g.graph().height + 40;
   var width = parseInt(svg.style("width").replace(/px/, ""));
@@ -68,5 +63,4 @@ async function draw(isUpdate) {
   );
 }
 
-// Initial draw, once the DOM is ready
 document.addEventListener("DOMContentLoaded", draw);

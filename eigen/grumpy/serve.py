@@ -1,7 +1,11 @@
 import os
 from http import server
 import json
+import eigen
+import base64
 # from urllib import urlparse
+
+kernel_data = b""
 
 
 class Handler(server.BaseHTTPRequestHandler):
@@ -24,8 +28,7 @@ class Handler(server.BaseHTTPRequestHandler):
                 res_type = "application/javascript"
 
         if self.path.startswith("/kernel"):
-            data = {"message": "The world is yours if you dare to ask."}
-            content = json.dumps(data).encode("utf-8")
+            content = kernel_data
             res_type = "application/json"
 
         self.send_response(200)
@@ -35,7 +38,9 @@ class Handler(server.BaseHTTPRequestHandler):
         return self.wfile.write(content)
 
 
-# if __name__ == "__main__":
-print("listening on: http://localhost:8080")
-h = server.HTTPServer(("localhost", 8080), Handler)
-h.serve_forever()
+if __name__ == "__main__":
+    print("listening on: http://localhost:8080")
+    raw_data = bytes(os.getenv("G_DATA").encode())
+    kernel_data = base64.b64decode(raw_data)
+    h = server.HTTPServer(("localhost", 8080), Handler)
+    h.serve_forever()

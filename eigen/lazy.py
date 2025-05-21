@@ -1,9 +1,11 @@
 from __future__ import annotations
 import eigen.ops
+import eigen.dtypes
 import weakref
 from dataclasses import dataclass
 import functools
 import hashlib
+import json
 
 
 class GlobalMap:
@@ -21,12 +23,15 @@ class GlobalMap:
 
 tensor_map = GlobalMap()
 node_map = GlobalMap()
+root_node = None
 
 
 class LazyOpMeta(type):
     cache: dict[tuple, weakref.ReferenceType[LazyOp]] = {}
 
-    def __call__(cls, op, srcs=tuple()):
+    def __call__(
+        cls, op, srcs=tuple(), dtype: None | eigen.dtypes.Eigen_Dtype = None
+    ):
         if not isinstance(srcs, (list, tuple)):
             srcs = (srcs,)
         srcs = tuple(srcs)
@@ -36,7 +41,7 @@ class LazyOpMeta(type):
         ) is not None:
             return cached
 
-        obj = super().__call__(op, srcs)
+        obj = super().__call__(op, srcs=srcs, dtype=dtype)
         LazyOpMeta.cache[key] = weakref.ref(obj)
         return obj
 
@@ -45,6 +50,13 @@ class LazyOpMeta(type):
 class LazyOp(metaclass=LazyOpMeta):
     op: eigen.ops.Ops
     srcs: tuple
+    dtype: eigen.dtypes.Eigen_Dtype
+
+    def to_json(self):
+        return {
+            "op": self.op.name,
+            "dtype": self.dtype.name + str(self.dtype.size * 8),
+        }
 
     def __str__(self):
         return self._str_recursive(0)

@@ -4,9 +4,13 @@ import os
 from typing import TYPE_CHECKING, Callable, Self, Union
 from functools import cached_property
 import inspect
+import sys
+import base64
+import json
 
 
 from eigen.lazy import LazyOp, tensor_map, node_map
+import eigen.lazy
 from eigen.ops import Ops
 
 if TYPE_CHECKING:
@@ -38,14 +42,16 @@ class Node:
         from eigen.tensor import Tensor
 
         input_ops = []
+        dtype = None
         for inp in self.inputs:
             if isinstance(inp, Tensor):
                 op = inp.node._walk()
                 input_ops.append(op)
+                dtype = inp.dtype
             else:
                 input_ops.append(inp)
 
-        op = LazyOp(self.op, input_ops)
+        op = LazyOp(self.op, input_ops, dtype=dtype)
         if node_map.get(op) is None:
             node_map.set(op, self)
 
@@ -53,7 +59,7 @@ class Node:
 
     @classmethod
     def make_const(cls, tensor, key):
-        op = LazyOp(Ops.CONST, srcs=(key,))
+        op = LazyOp(Ops.CONST, srcs=(key,), dtype=tensor.dtype)
         tensor_map.set(op, tensor)
 
         def kernel(*args):
@@ -63,7 +69,7 @@ class Node:
 
     def edge_list(self):
         tree = self._walk().toposort(debug=True)
-        ops = {}
+        ops: dict[LazyOp, str] = {}
         edges = []
         counter = 0
         for op in tree:
@@ -81,7 +87,7 @@ class Node:
         jsonable = {}
 
         for k, v in ops.items():
-            jsonable[v] = str(k.op.name)
+            jsonable[v] = k.to_json()
 
         return {"edges": edges, "nodes": jsonable}
 
@@ -126,6 +132,7 @@ class Node:
         self.computed = True
         tree = self._walk()
         exec_items = tree.toposort()
+        eigen.lazy.root_node = node_map.get(exec_items[-1])
         results = []
 
         for item in exec_items:
@@ -143,6 +150,21 @@ class Node:
             node_map.get(item).computed = True
             tensor_map.set(item, res)
             results.append(res)
+
+            if item == exec_items[-1]:
+                if int(os.getenv("G", "0")):
+                    grump_path = (
+                        os.path.join(os.path.dirname(__file__))
+                        + "/grumpy/serve.py"
+                    )
+                    os.environ["G_DATA"] = str(
+                        base64.b64encode(
+                            json.dumps(
+                                eigen.lazy.root_node.edge_list()
+                            ).encode()
+                        ).decode()
+                    )
+                    os.execv(sys.executable, [sys.executable, grump_path])
 
         if not results:
             return None
