@@ -61,6 +61,30 @@ class Node:
 
         return cls(op=Ops.CONST, kernel=kernel, inputs=(key,))
 
+    def edge_list(self):
+        tree = self._walk().toposort(debug=True)
+        ops = {}
+        edges = []
+        counter = 0
+        for op in tree:
+            if op not in ops:
+                ops[op] = f"op{counter}"
+                counter += 1
+            current_op = ops[op]
+            for s in op.srcs:
+                if isinstance(s, LazyOp):
+                    if s not in ops:
+                        ops[s] = f"op{counter}"
+                        counter += 1
+                    s_id = ops[s]
+                    edges.append((s_id, current_op))
+        jsonable = {}
+
+        for k, v in ops.items():
+            jsonable[v] = str(k.op.name)
+
+        return {"edges": edges, "nodes": jsonable}
+
     def debug(self):
         from tabulate import tabulate
 
