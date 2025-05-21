@@ -24,9 +24,6 @@ async function draw(isUpdate) {
   const data = await (await fetch("/kernels")).json();
   console.log(data);
   for (const n of Object.keys(data.nodes)) {
-    // if (worker.count > 10000) {
-    //   className += " warn";
-    // }
     g.setNode(n, {
       labelType: "html",
       label: `

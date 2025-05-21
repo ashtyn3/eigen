@@ -13,7 +13,6 @@ class Handler(server.BaseHTTPRequestHandler):
         content = b""
         res_type = "text/html"
         if self.path == "/":
-            print(os.path.join(os.path.dirname(__file__)))
             with open(
                 os.path.join(os.path.dirname(__file__), "index.html"), "rb"
             ) as f:
