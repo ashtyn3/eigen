@@ -72,6 +72,7 @@ class Ops(FastEnum):
     CONV2D = auto()
     MAX_POOL = auto()
     DROPOUT = auto()
+    LINEAR = auto()
 
 
 class OpsTrait:
@@ -82,6 +83,7 @@ class OpsTrait:
         op: Ops,
         host: other_consts | None,
         other: other_consts | None = None,
+        *args: other_consts,
     ):
         raise NotImplementedError(
             f"Operation {op} must be implemented in subclass"
@@ -249,3 +251,6 @@ class OpsTrait:
 
     def dropout(self, host: other_consts, rate):
         return self.op(Ops.DROPOUT, host, rate)
+
+    def linear(self, host, w, b):
+        return self.op(Ops.LINEAR, host, w, b)

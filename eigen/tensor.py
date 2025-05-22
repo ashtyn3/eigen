@@ -238,6 +238,20 @@ class Tensor:
 
         return out
 
+    def linear(self, weights: Tensor, bias: Tensor):
+        from eigen.ops import Ops
+
+        def linear_kernel(host, a, b):
+            return Device().Runtime().linear(host, a, b)
+
+        out = Tensor(
+            self.shape,
+            dtype=self.dtype,
+            node=Node(linear_kernel, Ops.LINEAR, inputs=[self, weights, bias]),
+        )
+
+        return out
+
     def mean(self, axis=0):
         from eigen.ops import Ops
 

@@ -202,11 +202,16 @@ class Runtime(ops.OpsTrait):
         host.shape = shape
         return host
 
+    def linear_op(self, host: Tensor, weights: Tensor, bias: Tensor):
+        res = self.matmul_op(host, weights)
+        return self.add(res, bias)
+
     def op(
         self,
         op: ops.Ops,
         host: ops.other_consts,
         other: ops.other_consts | None = None,
+        *args: ops.other_consts,
     ):
         # Ensure host is a Tensor, not a LazyOp
         from eigen.lazy import tensor_map, LazyOp
@@ -237,8 +242,9 @@ class Runtime(ops.OpsTrait):
             ops.Ops.RESHAPE: self.reshape_op,
             # linear algebra
             ops.Ops.MATMUL: self.matmul_op,
+            ops.Ops.LINEAR: self.linear_op,
         }[op]
 
         if other is not None:
-            return fn(host, other)
-        return fn(host)
+            return fn(host, other, *args)
+        return fn(host, *args)

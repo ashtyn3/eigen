@@ -6,5 +6,7 @@ import json
 n = Tensor.rand((2, 100, 10))
 a = Tensor.rand((2, 10, 100))
 
-res = n.matmul(a).sum(1) + 2
-res.realize()
+
+b = Tensor.rand((100, 100))
+
+(n.linear(a, b) + 69).realize()
